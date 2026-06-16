@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>jenkins-cli — CLI reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="../">jenkins-cli</a>
+    <div class="nav-links">
+      <a href="../">Home</a>
+      <a class="is-cli" href="../#commands">Commands</a>
+      <a href="https://github.com/AngelMsger/jenkins-cli">GitHub</a>
+    </div>
+  </div>
+</nav>
+<div class="layout">
+  <aside class="side">
+    <div class="side-group">
+      <div class="side-title">auth</div>
+      <a href="#jenkins-cli-auth">jenkins-cli auth</a>
+      <a href="#jenkins-cli-auth-login">jenkins-cli auth login</a>
+      <a href="#jenkins-cli-auth-logout">jenkins-cli auth logout</a>
+      <a href="#jenkins-cli-auth-status">jenkins-cli auth status</a>
+      </div>
+    <div class="side-group">
+      <div class="side-title">build</div>
+      <a href="#jenkins-cli-build">jenkins-cli build</a>
+      <a href="#jenkins-cli-build-artifacts">jenkins-cli build artifacts</a>
+      <a href="#jenkins-cli-build-changes">jenkins-cli build changes</a>
+      <a href="#jenkins-cli-build-get">jenkins-cli build get</a>
+      <a href="#jenkins-cli-build-list">jenkins-cli build list</a>
+      <a href="#jenkins-cli-build-log">jenkins-cli build log</a>
+      <a href="#jenkins-cli-build-stages">jenkins-cli build stages</a>
+      <a href="#jenkins-cli-build-stop">jenkins-cli build stop</a>
+      <a href="#jenkins-cli-build-tests">jenkins-cli build tests</a>
+      </div>
+    <div class="side-group">
+      <div class="side-title">config</div>
+      <a href="#jenkins-cli-config">jenkins-cli config</a>
+      <a href="#jenkins-cli-config-contexts">jenkins-cli config contexts</a>
+      <a href="#jenkins-cli-config-init">jenkins-cli config init</a>
+      <a href="#jenkins-cli-config-show">jenkins-cli config show</a>
+      <a href="#jenkins-cli-config-use-context">jenkins-cli config use-context</a>
+      </div>
+    <div class="side-group">
+      <div class="side-title">doctor</div>
+      <a href="#jenkins-cli-doctor">jenkins-cli doctor</a>
+      </div>
+    <div class="side-group">
+      <div class="side-title">job</div>
+      <a href="#jenkins-cli-job">jenkins-cli job</a>
+      <a href="#jenkins-cli-job-build">jenkins-cli job build</a>
+      <a href="#jenkins-cli-job-get">jenkins-cli job get</a>
+      <a href="#jenkins-cli-job-list">jenkins-cli job list</a>
+      </div>
+    <div class="side-group">
+      <div class="side-title">queue</div>
+      <a href="#jenkins-cli-queue">jenkins-cli queue</a>
+      <a href="#jenkins-cli-queue-cancel">jenkins-cli queue cancel</a>
+      <a href="#jenkins-cli-queue-get">jenkins-cli queue get</a>
+      <a href="#jenkins-cli-queue-list">jenkins-cli queue list</a>
+      </div>
+    <div class="side-group">
+      <div class="side-title">skill</div>
+      <a href="#jenkins-cli-skill">jenkins-cli skill</a>
+      <a href="#jenkins-cli-skill-install">jenkins-cli skill install</a>
+      <a href="#jenkins-cli-skill-path">jenkins-cli skill path</a>
+      <a href="#jenkins-cli-skill-show">jenkins-cli skill show</a>
+      <a href="#jenkins-cli-skill-uninstall">jenkins-cli skill uninstall</a>
+      </div>
+    <div class="side-group">
+      <div class="side-title">version</div>
+      <a href="#jenkins-cli-version">jenkins-cli version</a>
+      </div>
+    
+  </aside>
+  <main class="cli-main">
+    <span class="eyebrow">Reference</span>
+    <h1>CLI reference</h1>
+    <p class="lead">jenkins-cli inspects Jenkins for a developer&#39;s debugging workflow:
+discover jobs and branches, read build status, logs, test failures and
+pipeline stages, and trigger or stop builds. It emits agent-friendly
+JSON with structured errors, and works with any Jenkins instance.</p>
+    <p class="lead">Generated from the command tree, so it always matches <code>--help</code>.</p>
+
+    <section class="cmd">
+      <h2>Global flags</h2>
+      <p class="short">Persistent flags accepted by every command.</p>
+      <table>
+        <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+        <tr><td><code>--allow-writes</code></td><td><code>false</code></td><td>override read-only mode (defaults.read_only / JENKINS_CLI_READ_ONLY) for this invocation</td></tr>
+        <tr><td><code>--base-url</code></td><td></td><td>Jenkins server URL (overrides config), e.g. http://localhost:8080</td></tr>
+        <tr><td><code>--config</code></td><td></td><td>config directory (default ~/.angelmsger/jenkins)</td></tr>
+        <tr><td><code>--fields</code></td><td></td><td>comma-separated dot-path fields to keep</td></tr>
+        <tr><td><code>--format, -f</code></td><td></td><td>output format: json, table or ndjson</td></tr>
+        <tr><td><code>--pretty</code></td><td><code>false</code></td><td>human-friendly mode for interactive terminal use only (agents/scripts should omit): TUI in `config init`, colorized JSON elsewhere; errors without a TTY</td></tr>
+        <tr><td><code>--timeout</code></td><td></td><td>request timeout, e.g. 30s</td></tr>
+        <tr><td><code>--use-context</code></td><td></td><td>use a named context for this invocation</td></tr>
+        <tr><td><code>--verbose, -v</code></td><td><code>false</code></td><td>log request lines on stderr</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    
+    <section class="cmd" id="jenkins-cli-auth">
+      <h2>jenkins-cli auth<span class="group-tag">command group</span></h2>
+      <p class="short">Log in, check identity and log out</p>
+      <pre>jenkins-cli auth</pre>
+      
+      
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-auth-login">
+      <h2>jenkins-cli auth login</h2>
+      <p class="short">Store credentials for the active context (interactive)</p>
+      <pre>jenkins-cli auth login</pre>
+      <p class="long">Prompts for your Jenkins username and API token (or password), verifies
+them against the server, and stores the secret in the OS keychain.
+Requires an interactive terminal; in CI / agent sandboxes set
+JENKINS_USER &#43; JENKINS_TOKEN (or JENKINS_PASSWORD) instead.</p>
+      
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-auth-logout">
+      <h2>jenkins-cli auth logout</h2>
+      <p class="short">Remove the stored credential for the active context</p>
+      <pre>jenkins-cli auth logout</pre>
+      
+      
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-auth-status">
+      <h2>jenkins-cli auth status</h2>
+      <p class="short">Show the active identity and verify connectivity</p>
+      <pre>jenkins-cli auth status</pre>
+      
+      
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-build">
+      <h2>jenkins-cli build<span class="group-tag">command group</span></h2>
+      <p class="short">Inspect builds: status, logs, stages, tests, changes</p>
+      <pre>jenkins-cli build</pre>
+      <p class="long">A build is one run of a job. List a job&#39;s history, then drill into a
+build&#39;s result, console log, pipeline stages, test failures or SCM
+changes. A build reference is a number or a permalink keyword: last,
+lastSuccessful, lastFailed, lastCompleted, lastStable (default: last).</p>
+      
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-build-artifacts">
+      <h2>jenkins-cli build artifacts</h2>
+      <p class="short">List a build&#39;s archived artifacts</p>
+      <pre>jenkins-cli build artifacts &lt;path&gt; [ref]</pre>
+      <p class="long">Returns the build&#39;s archived artifacts with a direct download URL for each.</p>
+      
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-build-changes">
+      <h2>jenkins-cli build changes</h2>
+      <p class="short">Show the SCM commits in a build</p>
+      <pre>jenkins-cli build changes &lt;path&gt; [ref]</pre>
+      <p class="long">Returns the source-control changes a build picked up: commit id, author,
+message and affected paths. Works for both freestyle and pipeline jobs.</p>
+      
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-build-get">
+      <h2>jenkins-cli build get</h2>
+      <p class="short">Get one build: result, timing, trigger cause</p>
+      <pre>jenkins-cli build get &lt;path&gt; [ref]</pre>
+      <p class="long">Returns a build&#39;s result and status, when it started (absolute and
+relative) and how long it ran, which node it ran on, what triggered it,
+and any build parameters. ref defaults to the latest build.</p>
+      
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-build-list">
+      <h2>jenkins-cli build list</h2>
+      <p class="short">List a job&#39;s recent builds (newest first)</p>
+      <pre>jenkins-cli build list &lt;path&gt; [flags]</pre>
+      <p class="long">Returns a job&#39;s build history: number, status, start time (and how long
+ago), duration and what triggered each build. Use --limit to control how
+many builds come back.</p>
+      <h3>Options</h3>
+      <table>
+        <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+        <tr><td><code>--limit</code></td><td><code>20</code></td><td>number of builds to return</td></tr>
+        </tbody>
+      </table>
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-build-log">
+      <h2>jenkins-cli build log</h2>
+      <p class="short">Print a build&#39;s console output</p>
+      <pre>jenkins-cli build log &lt;path&gt; [ref] [flags]</pre>
+      <p class="long">Prints the build&#39;s console log as plain text to stdout. Use --start to
+resume from a byte offset, or --follow to stream new output until the
+build finishes (Ctrl-C to stop). ref defaults to the latest build.</p>
+      <h3>Options</h3>
+      <table>
+        <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+        <tr><td><code>--follow</code></td><td><code>false</code></td><td>stream new output until the build finishes (Ctrl-C to stop)</td></tr>
+        <tr><td><code>--start</code></td><td><code>0</code></td><td>start byte offset into the console log</td></tr>
+        </tbody>
+      </table>
+      <h3>Examples</h3><pre>  jenkins-cli build log my-app lastFailed
+  jenkins-cli build log my-app --follow</pre>
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-build-stages">
+      <h2>jenkins-cli build stages</h2>
+      <p class="short">Show a Pipeline build&#39;s stage-by-stage status</p>
+      <pre>jenkins-cli build stages &lt;path&gt; [ref]</pre>
+      <p class="long">Returns each Pipeline stage with its status and duration, so you can see
+exactly which stage failed. Applies to Pipeline / multibranch jobs only.</p>
+      
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-build-stop">
+      <h2>jenkins-cli build stop</h2>
+      <p class="short">Abort a running build (write)</p>
+      <pre>jenkins-cli build stop &lt;path&gt; &lt;ref&gt; [flags]</pre>
+      <p class="long">Aborts the build at &lt;path&gt; #&lt;ref&gt;. With --dry-run, print the request
+that would be sent and exit. This is a write: it is blocked in read-only
+mode unless --allow-writes is given.</p>
+      <h3>Options</h3>
+      <table>
+        <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+        <tr><td><code>--dry-run</code></td><td><code>false</code></td><td>print the request without stopping the build</td></tr>
+        </tbody>
+      </table>
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-build-tests">
+      <h2>jenkins-cli build tests</h2>
+      <p class="short">Show a build&#39;s test results</p>
+      <pre>jenkins-cli build tests &lt;path&gt; [ref] [flags]</pre>
+      <p class="long">Returns the build&#39;s test totals plus the individual cases. Use
+--failed-only to keep just the failing cases (with their error details) —
+the high-signal view when triaging a red build.</p>
+      <h3>Options</h3>
+      <table>
+        <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+        <tr><td><code>--failed-only</code></td><td><code>false</code></td><td>keep only failing test cases</td></tr>
+        </tbody>
+      </table>
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-config">
+      <h2>jenkins-cli config<span class="group-tag">command group</span></h2>
+      <p class="short">Set up and inspect configuration and contexts</p>
+      <pre>jenkins-cli config</pre>
+      
+      
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-config-contexts">
+      <h2>jenkins-cli config contexts</h2>
+      <p class="short">List configured contexts and which one is current</p>
+      <pre>jenkins-cli config contexts</pre>
+      
+      
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-config-init">
+      <h2>jenkins-cli config init</h2>
+      <p class="short">Interactively configure a context and store credentials</p>
+      <pre>jenkins-cli config init [flags]</pre>
+      <p class="long">Collects a server URL, username and API token (or password), verifies
+them, then writes a named context plus the secret. With --pretty it runs
+an interactive TUI (requires a terminal); without it, a plain line-by-line
+wizard that also works over a pipe. When a configuration already exists,
+it first asks whether to edit a context, add a new one, or replace it all
+(skip the question with --context &lt;name&gt;). For fully headless setup, set
+JENKINS_URL / JENKINS_USER / JENKINS_TOKEN (or JENKINS_PASSWORD) instead.</p>
+      <h3>Options</h3>
+      <table>
+        <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+        <tr><td><code>--context</code></td><td><code>default</code></td><td>name for the context to create or update (skips the edit/add/replace prompt)</td></tr>
+        </tbody>
+      </table>
+      <h3>Examples</h3><pre>  jenkins-cli config init --pretty   # interactive TUI (recommended)
+  jenkins-cli config init             # plain line-by-line wizard (scripts, non-TTY)
+  jenkins-cli config init --context prod   # add/update a named context directly</pre>
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-config-show">
+      <h2>jenkins-cli config show</h2>
+      <p class="short">Show the resolved configuration with field provenance</p>
+      <pre>jenkins-cli config show</pre>
+      
+      
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-config-use-context">
+      <h2>jenkins-cli config use-context</h2>
+      <p class="short">Set the current context</p>
+      <pre>jenkins-cli config use-context &lt;name&gt;</pre>
+      
+      
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-doctor">
+      <h2>jenkins-cli doctor</h2>
+      <p class="short">Check configuration, credentials and connectivity</p>
+      <pre>jenkins-cli doctor [flags]</pre>
+      <p class="long">Runs a quick health check: is a server configured, are credentials
+present, and can the server be reached and authenticated. Each check
+reports ok/failed so an agent can self-diagnose environment problems.
+It also reports whether a newer jenkins-cli release is available.</p>
+      <h3>Options</h3>
+      <table>
+        <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+        <tr><td><code>--no-update-check</code></td><td><code>false</code></td><td>skip the check for a newer jenkins-cli release</td></tr>
+        </tbody>
+      </table>
+      <h3>Examples</h3><pre>  jenkins-cli doctor
+  jenkins-cli doctor --no-update-check</pre>
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-job">
+      <h2>jenkins-cli job<span class="group-tag">command group</span></h2>
+      <p class="short">Discover jobs and trigger builds</p>
+      <pre>jenkins-cli job</pre>
+      <p class="long">Jobs are the projects, folders and multibranch pipelines on the
+instance. `job list` is the discovery map; `job get` shows one job&#39;s
+detail (parameters, health, branch jobs, last-build pointers); `job
+build` triggers a build. Job paths are folder/job[/branch] — list to
+find the exact name before querying.</p>
+      
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-job-build">
+      <h2>jenkins-cli job build</h2>
+      <p class="short">Trigger a build of a job (write)</p>
+      <pre>jenkins-cli job build &lt;path&gt; [flags]</pre>
+      <p class="long">Starts a build of the job at &lt;path&gt;. Pass --param KEY=VALUE (repeatable)
+for a parameterized job. With --dry-run, print the request that would be
+sent and exit without triggering. This is a write: it is blocked in
+read-only mode unless --allow-writes is given.</p>
+      <h3>Options</h3>
+      <table>
+        <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+        <tr><td><code>--dry-run</code></td><td><code>false</code></td><td>print the request without triggering the build</td></tr>
+        <tr><td><code>--param</code></td><td><code>[]</code></td><td>build parameter KEY=VALUE (repeatable)</td></tr>
+        </tbody>
+      </table>
+      <h3>Examples</h3><pre>  jenkins-cli job build my-folder/my-app
+  jenkins-cli job build my-app --param BRANCH=main --param CLEAN=true
+  jenkins-cli job build my-app --param BRANCH=main --dry-run</pre>
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-job-get">
+      <h2>jenkins-cli job get</h2>
+      <p class="short">Get one job, including parameters and last-build pointers</p>
+      <pre>jenkins-cli job get &lt;path&gt;</pre>
+      <p class="long">Returns a single job by path (folder/job[/branch]): its description,
+build parameters, health, last / lastSuccessful / lastFailed build
+pointers, and — for folders and multibranch projects — the child jobs
+(branches and PRs).</p>
+      
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-job-list">
+      <h2>jenkins-cli job list</h2>
+      <p class="short">List jobs (the discovery map)</p>
+      <pre>jenkins-cli job list [flags]</pre>
+      <p class="long">Lists jobs with their type, status and last-build snapshot. Pass --folder
+to list inside a folder — or a multibranch project, which lists its
+branch / PR jobs — and --depth to recurse nested containers. Each job&#39;s
+last_build carries its result, start time and duration, so one call shows
+every branch&#39;s build situation. Status is derived from Jenkins&#39; color
+field (success / failure / unstable / building / disabled / not_built).</p>
+      <h3>Options</h3>
+      <table>
+        <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+        <tr><td><code>--depth</code></td><td><code>0</code></td><td>recurse nested folders this many levels (0 = immediate children)</td></tr>
+        <tr><td><code>--folder</code></td><td></td><td>list jobs inside this folder, or branches of this multibranch project</td></tr>
+        </tbody>
+      </table>
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-queue">
+      <h2>jenkins-cli queue<span class="group-tag">command group</span></h2>
+      <p class="short">Inspect and manage the build queue</p>
+      <pre>jenkins-cli queue</pre>
+      <p class="long">The queue holds builds waiting to start. List it to see what is pending
+or blocked and why, inspect one item, or cancel a queued build before it
+runs.</p>
+      
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-queue-cancel">
+      <h2>jenkins-cli queue cancel</h2>
+      <p class="short">Cancel a queued build before it starts (write)</p>
+      <pre>jenkins-cli queue cancel &lt;id&gt; [flags]</pre>
+      <p class="long">Removes a still-queued build by its queue id. With --dry-run, print the
+request that would be sent and exit. This is a write: it is blocked in
+read-only mode unless --allow-writes is given.</p>
+      <h3>Options</h3>
+      <table>
+        <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+        <tr><td><code>--dry-run</code></td><td><code>false</code></td><td>print the request without cancelling</td></tr>
+        </tbody>
+      </table>
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-queue-get">
+      <h2>jenkins-cli queue get</h2>
+      <p class="short">Get one queue item</p>
+      <pre>jenkins-cli queue get &lt;id&gt;</pre>
+      
+      
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-queue-list">
+      <h2>jenkins-cli queue list</h2>
+      <p class="short">List builds waiting in the queue</p>
+      <pre>jenkins-cli queue list</pre>
+      
+      
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-skill">
+      <h2>jenkins-cli skill<span class="group-tag">command group</span></h2>
+      <p class="short">Install the companion Skill for coding agents (Claude Code, Codex)</p>
+      <pre>jenkins-cli skill</pre>
+      
+      
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-skill-install">
+      <h2>jenkins-cli skill install</h2>
+      <p class="short">Deploy the embedded Skill into a coding agent&#39;s skills directory</p>
+      <pre>jenkins-cli skill install [flags]</pre>
+      <p class="long">Write the companion `jenkins` Skill — bundled inside this binary —
+into a coding agent&#39;s skills directory. With no flags it probes for
+installed agents (Claude Code, Codex) and installs into each one found.
+Re-run it after upgrading the CLI to refresh the Skill to the matching
+version.</p>
+      <h3>Options</h3>
+      <table>
+        <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+        <tr><td><code>--agent</code></td><td><code>[]</code></td><td>target agents instead of auto-detecting (claude-code, codex)</td></tr>
+        <tr><td><code>--dir</code></td><td></td><td>explicit skills base directory; installs into &lt;dir&gt;/jenkins</td></tr>
+        <tr><td><code>--project</code></td><td><code>false</code></td><td>install into the project (./.claude/skills, ./.agents/skills) instead of $HOME</td></tr>
+        </tbody>
+      </table>
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-skill-path">
+      <h2>jenkins-cli skill path</h2>
+      <p class="short">Print where the Skill would be installed, and whether it is</p>
+      <pre>jenkins-cli skill path [flags]</pre>
+      
+      <h3>Options</h3>
+      <table>
+        <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+        <tr><td><code>--agent</code></td><td><code>[]</code></td><td>limit to specific agents (claude-code, codex)</td></tr>
+        <tr><td><code>--dir</code></td><td></td><td>explicit skills base directory</td></tr>
+        <tr><td><code>--project</code></td><td><code>false</code></td><td>use the project skills directories instead of $HOME</td></tr>
+        </tbody>
+      </table>
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-skill-show">
+      <h2>jenkins-cli skill show</h2>
+      <p class="short">Print the embedded SKILL.md to stdout</p>
+      <pre>jenkins-cli skill show</pre>
+      
+      
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-skill-uninstall">
+      <h2>jenkins-cli skill uninstall</h2>
+      <p class="short">Remove the companion Skill from a coding agent&#39;s skills directory</p>
+      <pre>jenkins-cli skill uninstall [flags]</pre>
+      <p class="long">Delete a previously installed `jenkins` Skill. With no flags it
+probes for installed agents (Claude Code, Codex) and removes the Skill
+from each one found.</p>
+      <h3>Options</h3>
+      <table>
+        <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+        <tr><td><code>--agent</code></td><td><code>[]</code></td><td>target agents instead of auto-detecting (claude-code, codex)</td></tr>
+        <tr><td><code>--dir</code></td><td></td><td>explicit skills base directory; removes &lt;dir&gt;/jenkins</td></tr>
+        <tr><td><code>--project</code></td><td><code>false</code></td><td>remove from the project (./.claude/skills, ./.agents/skills) instead of $HOME</td></tr>
+        </tbody>
+      </table>
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-version">
+      <h2>jenkins-cli version</h2>
+      <p class="short">Print version information</p>
+      <pre>jenkins-cli version</pre>
+      
+      
+      
+    </section>
+    
+  </main>
+</div>
+<footer class="footer">
+  <div class="wrap">
+    <span class="brand-foot">jenkins-cli — MIT License</span>
+    <span><a href="https://github.com/AngelMsger/jenkins-cli">github.com/AngelMsger/jenkins-cli</a></span>
+  </div>
+</footer>
+</body>
+</html>

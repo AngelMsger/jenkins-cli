@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>jenkins-cli — query Jenkins from your terminal</title>
+<meta name="description" content="A command-line tool that lets coding agents inspect Jenkins: discover jobs and builds, read status, console logs, pipeline stages, test failures and SCM changes, and trigger or stop builds, with structured JSON output.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="#top">jenkins-cli</a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#quickstart">Quick start</a>
+      <a href="#commands">Commands</a>
+      <a class="is-cli" href="cli/">CLI reference</a>
+      <a href="https://github.com/AngelMsger/jenkins-cli">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <h1 class="reveal d1">jenkins-cli<span class="cursor"></span></h1>
+    <p class="tagline reveal d2">Inspect Jenkins from your terminal — built for coding agents, designed for humans.</p>
+    <div class="pills reveal d3">
+      <span class="pill">Jobs · Builds · Logs</span>
+      <span class="pill">Why did it fail?</span>
+      <span class="pill">Built for agents</span>
+    </div>
+    <div class="cta reveal d4">
+      <a class="btn btn-primary" href="#install">Get started</a>
+      <a class="btn btn-ghost" href="cli/">Browse the CLI reference →</a>
+      <a class="btn btn-ghost" href="https://github.com/AngelMsger/jenkins-cli">GitHub</a>
+    </div>
+    <div class="shot reveal d5">
+      <img src="image.png" alt="jenkins-cli in a terminal">
+    </div>
+  </div>
+</header>
+
+<section class="section" id="features">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Capabilities</span>
+      <h2>Debug your builds, the agent way</h2>
+      <p class="lead">Discover jobs, read build status, and find out why a build failed — with output a coding agent can act on.</p>
+    </div>
+    <div class="grid grid-3">
+      <div class="card feat">
+        <div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg></div>
+        <h3>Discover jobs</h3>
+        <p><code>job list</code> maps jobs, folders and multibranch branches with their type and status; <code>job get</code> shows parameters, health and last-build pointers.</p>
+      </div>
+      <div class="card feat">
+        <div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg></div>
+        <h3>Why did it fail?</h3>
+        <p><code>build stages</code> shows which Pipeline stage broke, <code>build tests --failed-only</code> the failing cases, and <code>build changes</code> the commits that went in.</p>
+      </div>
+      <div class="card feat">
+        <div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg></div>
+        <h3>Console logs</h3>
+        <p><code>build log</code> prints raw, grep-able console output; <code>--follow</code> streams a running build to completion via Jenkins' progressive log.</p>
+      </div>
+      <div class="card feat">
+        <div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V4"/><path d="M4 20h16"/><rect x="7" y="12" width="3" height="5"/><rect x="12" y="8" width="3" height="9"/><rect x="17" y="5" width="3" height="12"/></svg></div>
+        <h3>Map before terrain</h3>
+        <p><code>job list</code> returns a compact, <code>?tree=</code>-shaped view, so an agent sees the shape before pulling a full job or a large console log.</p>
+      </div>
+      <div class="card feat">
+        <div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9z"/></svg></div>
+        <h3>Trigger &amp; stop</h3>
+        <p><code>job build</code> kicks off a build (with <code>--param</code>), <code>build stop</code> aborts one — each with <code>--dry-run</code> preview and read-only gating.</p>
+      </div>
+      <div class="card feat">
+        <div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 8l-4 4 4 4"/><path d="M16 8l4 4-4 4"/><path d="M13 5l-2 14"/></svg></div>
+        <h3>Agent-first output</h3>
+        <p>JSON by default, with structured errors — categories, exit codes and recovery <code>next_steps</code> a coding agent can branch on.</p>
+      </div>
+      <div class="card feat">
+        <div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></div>
+        <h3>No footguns</h3>
+        <p>Human job paths map to Jenkins URLs, the <code>color</code> field becomes a stable <code>status</code>, and timestamps come back as an ISO instant plus a relative phrase.</p>
+      </div>
+      <div class="card feat">
+        <div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4-8 4-8-4z"/><path d="M4 12l8 4 8-4"/><path d="M4 17l8 4 8-4"/></svg></div>
+        <h3>Multiple servers</h3>
+        <p>kubectl-style named contexts in one config file. Switch the current server, or override per command with <code>--use-context</code>.</p>
+      </div>
+      <div class="card feat">
+        <div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
+        <h3>Secure credentials</h3>
+        <p>Your API token lives in the OS keychain, with a <code>0600</code> file fallback — never in the config file. Env vars for headless use.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="install">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Install</span>
+      <h2>Up and running in a minute</h2>
+      <p class="lead">Install with npm, then finish setup in two steps — deploy the Skill, then turn on shell completion.</p>
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="term-title">install</span></div>
+<pre><span class="c"># recommended — fetches the prebuilt binary for your platform</span>
+npm install -g @angelmsger/jenkins-cli</pre>
+    </div>
+    <p style="margin-top:14px;color:var(--muted)">Other methods — <code>go install</code>, a source build, or a prebuilt binary from the
+      <a href="https://github.com/AngelMsger/jenkins-cli/releases">Releases page</a> — are in the
+      <a href="https://github.com/AngelMsger/jenkins-cli#installation">README</a>.</p>
+    <p class="lead" style="margin-top:30px">Then finish setup:</p>
+    <div class="grid grid-2" style="margin-top:14px">
+      <div class="card">
+        <h3>1 · Companion Skill</h3>
+        <p style="margin:6px 0 12px">An <code>jenkins</code> Skill is embedded in the binary. It detects your coding agent — Claude Code, Codex — and installs for each:</p>
+        <div class="term"><div class="term-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+<pre><span class="p">$</span> jenkins-cli skill install</pre></div>
+      </div>
+      <div class="card">
+        <h3>2 · Shell completion</h3>
+        <p style="margin:6px 0 12px">Completes subcommands and flag values. Load it once:</p>
+        <div class="term"><div class="term-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+<pre><span class="p">$</span> source &lt;(jenkins-cli completion bash)</pre></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="quickstart">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Quick start</span>
+      <h2>Configure once, then debug the build</h2>
+      <p class="lead">Set up a server, find the job, then drill into why the build is red.</p>
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="term-title">a typical session</span></div>
+<pre><span class="c"># interactive setup, then verify connectivity</span>
+<span class="p">$</span> jenkins-cli config init --pretty
+<span class="p">$</span> jenkins-cli doctor
+
+<span class="c"># discover jobs, then look at one</span>
+<span class="p">$</span> jenkins-cli job list
+<span class="p">$</span> jenkins-cli job get my-team/my-app
+
+<span class="c"># why is the latest build red?</span>
+<span class="p">$</span> jenkins-cli build get my-app lastFailed
+<span class="p">$</span> jenkins-cli build stages my-app lastFailed
+<span class="p">$</span> jenkins-cli build tests my-app lastFailed --failed-only
+<span class="p">$</span> jenkins-cli build log my-app lastFailed | tail -n 80
+
+<span class="c"># trigger a build and watch it (writes; preview first)</span>
+<span class="p">$</span> jenkins-cli job build my-app --param BRANCH=main --dry-run
+<span class="p">$</span> jenkins-cli build log my-app --follow</pre>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="commands">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Commands</span>
+      <h2>The command surface</h2>
+      <p class="lead">Organised <code>&lt;noun&gt; &lt;verb&gt;</code>, aligned with Jenkins' own resource hierarchy. Every flag and example lives in the README and the companion Skill.</p>
+    </div>
+    <div class="grid grid-3">
+      <a class="card cmd-group" href="cli/#jenkins-cli-job">
+        <span class="cg-name">job</span>
+        <p>Discover jobs and branches; <code>build</code> to trigger one.</p>
+      </a>
+      <a class="card cmd-group" href="cli/#jenkins-cli-build">
+        <span class="cg-name">build</span>
+        <p><code>get</code>, <code>log</code>, <code>stages</code>, <code>tests</code>, <code>changes</code>, <code>stop</code> — inspect a build.</p>
+      </a>
+      <a class="card cmd-group" href="cli/#jenkins-cli-queue">
+        <span class="cg-name">queue</span>
+        <p>List builds waiting to run; cancel a queued one.</p>
+      </a>
+      <a class="card cmd-group" href="cli/#jenkins-cli-auth">
+        <span class="cg-name">auth</span>
+        <p>Log in, check identity and log out.</p>
+      </a>
+      <a class="card cmd-group" href="cli/#jenkins-cli-config">
+        <span class="cg-name">config</span>
+        <p>Setup wizard, plus multi-server context management.</p>
+      </a>
+      <a class="card cmd-group" href="cli/#jenkins-cli-doctor">
+        <span class="cg-name">doctor</span>
+        <p>Diagnose configuration, credentials and connectivity.</p>
+      </a>
+      <a class="card cmd-group" href="cli/#jenkins-cli-skill">
+        <span class="cg-name">skill</span>
+        <p>Deploy the embedded companion Skill to your agents.</p>
+      </a>
+      <a class="card cmd-group" href="cli/#jenkins-cli-version">
+        <span class="cg-name">version</span>
+        <p>Print version and build information.</p>
+      </a>
+    </div>
+    <div class="cta" style="justify-content:flex-start;margin-top:26px">
+      <a class="btn btn-primary" href="cli/">Open the full CLI reference →</a>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="guides">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Guides</span>
+      <h2>Go deeper</h2>
+      <p class="lead">Longer-form documentation, rendered on GitHub.</p>
+    </div>
+    <div class="grid grid-3">
+      <a class="card" href="https://github.com/AngelMsger/jenkins-cli/blob/main/docs/installation.md">
+        <h3>Installation &amp; setup →</h3>
+        <p>Every install method, shell completion, deploying the Skill, and configuration.</p>
+      </a>
+      <a class="card" href="https://github.com/AngelMsger/jenkins-cli/blob/main/docs/technical-design.md">
+        <h3>Technical design →</h3>
+        <p>Architecture, the API client and error model, config resolution and rendering.</p>
+      </a>
+      <a class="card" href="https://github.com/AngelMsger/jenkins-cli/blob/main/docs/releasing.md">
+        <h3>Releasing →</h3>
+        <p>How releases are cut and published to GitHub and npm.</p>
+      </a>
+      <a class="card" href="https://github.com/AngelMsger/jenkins-cli/tree/main/skills/jenkins">
+        <h3>Companion Skill →</h3>
+        <p>The <code>jenkins</code> Skill that teaches a coding agent the CLI.</p>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap">
+    <span class="brand-foot">jenkins-cli — MIT License</span>
+    <span>Sister CLIs: <a href="https://angelmsger.github.io/confluence-cli/">confluence-cli</a> · <a href="https://angelmsger.github.io/bitbucket-cli/">bitbucket-cli</a> · <a href="https://angelmsger.github.io/openobserve-cli/">openobserve-cli</a> · <a href="https://github.com/AngelMsger">more →</a></span>
+    <span><a href="https://github.com/AngelMsger/jenkins-cli">github.com/AngelMsger/jenkins-cli</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

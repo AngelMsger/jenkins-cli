@@ -1,0 +1,47 @@
+{
+  "name": "@angelmsger/jenkins-cli",
+  "version": "0.1.0",
+  "description": "Inspect Jenkins from the command line for coding agents: discover jobs and builds, read status, console logs, pipeline stages, test failures and SCM changes, and trigger or stop builds, with structured JSON output.",
+  "keywords": [
+    "jenkins",
+    "ci",
+    "ci-cd",
+    "build",
+    "pipeline",
+    "jobs",
+    "console",
+    "cli",
+    "agent",
+    "claude"
+  ],
+  "homepage": "https://github.com/AngelMsger/jenkins-cli",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AngelMsger/jenkins-cli.git"
+  },
+  "license": "MIT",
+  "bin": {
+    "jenkins-cli": "bin/jenkins-cli.js"
+  },
+  "main": "install.js",
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "files": [
+    "bin/",
+    "install.js",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ]
+}
