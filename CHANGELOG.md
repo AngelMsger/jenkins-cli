@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-06-17
+
+### Fixed
+
+- **npm package was uninstallable.** The launcher shim `build/npm/bin/jenkins-cli.js`
+  — which `package.json`'s `bin` points at and which execs the downloaded
+  platform binary — was missing from the package, so `npm i -g
+  @angelmsger/jenkins-cli` produced a dead command (e.g. a failing Volta shim).
+  The launcher is now included.
+
 ## [0.1.0] - 2026-06-17
 
 Initial release — an agent-facing CLI for a developer's Jenkins debugging
@@ -55,5 +65,6 @@ workflow.
   release binaries and `make install`. A generated CLI reference (`docs/cli/`)
   and a GitHub Pages landing page.
 
-[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/AngelMsger/jenkins-cli/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/AngelMsger/jenkins-cli/releases/tag/v0.1.0

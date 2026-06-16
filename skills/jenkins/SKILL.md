@@ -1,6 +1,6 @@
 ---
 name: jenkins
-version: 0.1.0
+version: 0.1.1
 description: "Inspect Jenkins for a developer's debugging workflow from the command line: discover jobs, folders and multibranch branches/PRs; read build status and history; find why a build failed — which pipeline stage broke, the failing test cases, the console log, and the SCM commits in a build; list and inspect the build queue; and trigger or stop builds. Agent-friendly JSON with structured errors; works with any Jenkins instance. Use this skill when the user mentions Jenkins or CI, gives a Jenkins job or build URL, or asks: what is the build status, did the latest build pass or fail, when did it last succeed/fail, why is the build red / failing, show the console log / build output, which stage failed, which tests are failing, what changed in a build, is anything queued — or to trigger / rebuild / start / stop / abort / cancel a build. Set up with `jenkins-cli config init`, or JENKINS_URL / JENKINS_USER / JENKINS_TOKEN env vars. Inspection is read-only; build trigger and stop are writes that need --allow-writes."
 metadata:
   requires:
