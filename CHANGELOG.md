@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.0] - 2026-06-16
+## [0.1.0] - 2026-06-17
 
 Initial release — an agent-facing CLI for a developer's Jenkins debugging
 workflow.
