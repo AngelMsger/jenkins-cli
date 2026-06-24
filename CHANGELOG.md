@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-06-24
+
+### Fixed
+
+- **The "update available" notice was suppressed on failed commands.** It was
+  emitted from a `PersistentPostRunE`, which cobra runs only after a command
+  succeeds — so a command that errored never surfaced the notice, even when a
+  newer release existed. It now fires from `Execute` after the command runs, on
+  success and failure alike. The stderr-only delivery, the skip list, and the
+  `JENKINS_CLI_NO_UPDATE_NOTIFIER` opt-out are unchanged.
+
 ## [0.1.2] - 2026-06-24
 
 ### Added
@@ -79,7 +90,8 @@ workflow.
   release binaries and `make install`. A generated CLI reference (`docs/cli/`)
   and a GitHub Pages landing page.
 
-[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/AngelMsger/jenkins-cli/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/AngelMsger/jenkins-cli/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/AngelMsger/jenkins-cli/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/AngelMsger/jenkins-cli/releases/tag/v0.1.0
