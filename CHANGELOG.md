@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-06-24
+
+### Added
+
+- **Companion-Skill discovery for agents.** Agents sometimes shell out to this
+  CLI without loading the `jenkins` Skill, bypassing the usage recipes and
+  safety guidance it maintains. The root `--help` now carries an `AGENT NOTE`
+  pointing at the Skill; `jenkins-cli skill status` reports whether the Skill is
+  loaded (via the `JENKINS_CLI_SKILL` handshake) and installed; and any real
+  command run non-interactively without that handshake prints a one-line
+  `{"_notice":{"skill":…}}` hint to **stderr** (stdout stays clean). The hint is
+  silent for humans (TTY), self-silences once the Skill sets `JENKINS_CLI_SKILL=1`,
+  and can be turned off with `JENKINS_CLI_NO_SKILL_HINT=1`.
+
 ## [0.1.1] - 2026-06-17
 
 ### Fixed
@@ -65,6 +79,7 @@ workflow.
   release binaries and `make install`. A generated CLI reference (`docs/cli/`)
   and a GitHub Pages landing page.
 
-[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/AngelMsger/jenkins-cli/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/AngelMsger/jenkins-cli/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/AngelMsger/jenkins-cli/releases/tag/v0.1.0

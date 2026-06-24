@@ -52,12 +52,18 @@ func newRootCmd() *cobra.Command {
 		Long: "jenkins-cli inspects Jenkins for a developer's debugging workflow:\n" +
 			"discover jobs and branches, read build status, logs, test failures and\n" +
 			"pipeline stages, and trigger or stop builds. It emits agent-friendly\n" +
-			"JSON with structured errors, and works with any Jenkins instance.",
+			"JSON with structured errors, and works with any Jenkins instance.\n\n" +
+			"AGENT NOTE: a companion Skill (\"jenkins\") carries the canonical usage,\n" +
+			"safety modes, and env setup and is the source of truth for driving this CLI.\n" +
+			"If you are an agent, load that Skill before composing commands. Check status\n" +
+			"with `jenkins-cli skill status`; install it with `jenkins-cli skill install`.",
 		Version:       versionString(),
 		SilenceErrors: true,
 		SilenceUsage:  true,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			output.SetErrorPretty(state.gflags.pretty)
+			// Nudge agents that shell out without the companion Skill loaded.
+			maybeSkillHint(cmd)
 			return state.load()
 		},
 		// After a command succeeds, surface a one-line update notice on stderr

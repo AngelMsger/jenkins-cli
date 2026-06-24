@@ -73,6 +73,7 @@
       <a href="#jenkins-cli-skill-install">jenkins-cli skill install</a>
       <a href="#jenkins-cli-skill-path">jenkins-cli skill path</a>
       <a href="#jenkins-cli-skill-show">jenkins-cli skill show</a>
+      <a href="#jenkins-cli-skill-status">jenkins-cli skill status</a>
       <a href="#jenkins-cli-skill-uninstall">jenkins-cli skill uninstall</a>
       </div>
     <div class="side-group">
@@ -87,7 +88,12 @@
     <p class="lead">jenkins-cli inspects Jenkins for a developer&#39;s debugging workflow:
 discover jobs and branches, read build status, logs, test failures and
 pipeline stages, and trigger or stop builds. It emits agent-friendly
-JSON with structured errors, and works with any Jenkins instance.</p>
+JSON with structured errors, and works with any Jenkins instance.
+
+AGENT NOTE: a companion Skill (&#34;jenkins&#34;) carries the canonical usage,
+safety modes, and env setup and is the source of truth for driving this CLI.
+If you are an agent, load that Skill before composing commands. Check status
+with `jenkins-cli skill status`; install it with `jenkins-cli skill install`.</p>
     <p class="lead">Generated from the command tree, so it always matches <code>--help</code>.</p>
 
     <section class="cmd">
@@ -515,6 +521,21 @@ version.</p>
       <pre>jenkins-cli skill show</pre>
       
       
+      
+    </section>
+    
+    <section class="cmd" id="jenkins-cli-skill-status">
+      <h2>jenkins-cli skill status</h2>
+      <p class="short">Report whether the companion Skill is loaded and installed</p>
+      <pre>jenkins-cli skill status [flags]</pre>
+      
+      <h3>Options</h3>
+      <table>
+        <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+        <tr><td><code>--project</code></td><td><code>false</code></td><td>check the project skills dirs (./.claude/skills, ./.agents/skills) instead of $HOME</td></tr>
+        </tbody>
+      </table>
       
     </section>
     
