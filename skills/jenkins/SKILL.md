@@ -86,16 +86,21 @@ jenkins-cli job list [--folder <path>] [--depth N]   # discover jobs (the map)
 jenkins-cli job get <path>                           # one job: params, branches, last builds
 jenkins-cli build list <path> [--limit N]            # build history (newest first)
 jenkins-cli build get <path> [lastFailed]            # one build: result, timing, cause
-jenkins-cli build log <path> [ref] [--follow]        # console output (stream with --follow)
+jenkins-cli build log <path> [ref] [--follow] [--start N]   # console output (--follow to stream; --start N resumes from a byte offset)
 jenkins-cli build stages <path> [ref]                # Pipeline stage status — which stage failed
 jenkins-cli build tests <path> [ref] --failed-only   # failing test cases
 jenkins-cli build changes <path> [ref]               # SCM commits in the build
 jenkins-cli build artifacts <path> [ref]             # archived artifacts
 jenkins-cli queue list                               # builds waiting to run
+jenkins-cli queue get <id>                           # one queue item (why it is blocked)
+jenkins-cli queue cancel <id>                        # remove a queued item (write)
 jenkins-cli job build <path> --param K=V --dry-run   # trigger a build (write; preview first)
 jenkins-cli build stop <path> <number>               # abort a running build (write)
+jenkins-cli config init|show                         # configuration
+jenkins-cli config contexts|use-context <name>       # list / switch named server contexts
 jenkins-cli auth status                              # who am I / can I reach the server
 jenkins-cli doctor                                   # diagnose config / creds / connectivity
+jenkins-cli skill status|install|path|show|uninstall # manage the companion Skill
 ```
 
 ## Agent-facing conventions
@@ -107,6 +112,12 @@ jenkins-cli doctor                                   # diagnose config / creds /
   **stderr** (non-interactive sessions only). Setting it silences the hint;
   `jenkins-cli skill status` reports whether it is set. (To suppress the hint
   without loading the Skill, use `JENKINS_CLI_NO_SKILL_HINT=1`.)
+- **Update notices on stderr.** When a newer release exists, commands print a
+  one-line `{"_notice":{"update":{…}}}` to **stderr** (never stdout) — on failed
+  commands too, not just successful ones. It carries the latest version and an
+  `npm install -g @angelmsger/jenkins-cli@latest` hint. Silence it with
+  `JENKINS_CLI_NO_UPDATE_NOTIFIER=1`, or skip the check per-run with
+  `doctor --no-update-check`.
 - stdout is data only; diagnostics, notices and errors go to stderr.
 - Exit codes are stable and categorized (0 ok, 2 usage, 3 config, 4 auth,
   5 permission, 6 not found, …); see

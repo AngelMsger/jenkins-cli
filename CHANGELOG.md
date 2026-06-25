@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-06-25
+
+### Fixed
+
+- **The companion Skill drifted out of sync with the CLI.** The agent-facing
+  Skill (`skills/jenkins/`) — read by coding agents instead of `--help` — did not
+  document the `{"_notice":{"update":{…}}}` stderr notice (only the `skill` one),
+  and its `## Commands` cheat-sheet omitted `queue get` / `queue cancel`,
+  `build log --start`, `config contexts` / `use-context`, and the `skill` command
+  group. All are now documented, and an AGENTS.md rule requires the Skill to be
+  updated in lockstep with the CLI. (Skill content only — no behavior change.)
+
 ## [0.1.3] - 2026-06-24
 
 ### Fixed
@@ -90,7 +102,8 @@ workflow.
   release binaries and `make install`. A generated CLI reference (`docs/cli/`)
   and a GitHub Pages landing page.
 
-[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/AngelMsger/jenkins-cli/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/AngelMsger/jenkins-cli/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/AngelMsger/jenkins-cli/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/AngelMsger/jenkins-cli/compare/v0.1.0...v0.1.1

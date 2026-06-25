@@ -61,3 +61,12 @@ a pure `*Plan` builder in `apiclient`, so it works even in read-only mode),
 require `--yes` for destructive ops, route through `apiclient.NewReadOnly`
 (override the new method to return `READONLY_BLOCKED`), fetch a CSRF crumb for
 POSTs, and keep the `{items,has_more}` + structured-error contract.
+
+**Keep the companion Skill in sync — it is the agent-facing source of truth.**
+Any new command, subcommand, flag, or alias (and any change to write-gating) must
+be reflected in the embedded Skill ([`skills/jenkins/`](skills/jenkins/): the
+`SKILL.md` `## Commands` cheat-sheet and the relevant `references/` file) **in the
+same commit**. Agents read the Skill instead of `--help`, so a capability it omits
+effectively does not exist for them; a flag whose help text points at another
+command must have that command listed in the Skill, and no Skill claim may
+contradict the code.
