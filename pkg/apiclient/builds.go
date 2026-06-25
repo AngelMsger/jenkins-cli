@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/angelmsger/jenkins-cli/internal/timeutil"
+	"github.com/angelmsger/jenkins-cli/pkg/timeutil"
 )
 
 type rawBuild struct {

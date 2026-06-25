@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io"
 
-	cerrors "github.com/angelmsger/jenkins-cli/internal/errors"
+	cerrors "github.com/angelmsger/jenkins-cli/pkg/errors"
 	"github.com/neilotoole/jsoncolor"
 )
 

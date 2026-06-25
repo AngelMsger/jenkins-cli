@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	jenkinscli "github.com/angelmsger/jenkins-cli"
-	cerrors "github.com/angelmsger/jenkins-cli/internal/errors"
 	"github.com/angelmsger/jenkins-cli/pkg/constants"
+	cerrors "github.com/angelmsger/jenkins-cli/pkg/errors"
 	"github.com/spf13/cobra"
 )
 

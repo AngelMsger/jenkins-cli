@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/angelmsger/jenkins-cli/internal/timeutil"
+	"github.com/angelmsger/jenkins-cli/pkg/timeutil"
 )
 
 type rawChangeItem struct {

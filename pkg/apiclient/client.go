@@ -2,6 +2,13 @@
 // requests against the Jenkins remote access API (the api/json, consoleText and
 // wfapi endpoints), decodes normalized models, and converts non-2xx responses
 // into structured *errors.CLIError values.
+//
+// This package backs the jenkins-cli command layer and is also importable as a
+// standalone client library (e.g. by a GUI); see the repository README. Its
+// exported surface — the Client interface, the normalized models, and the
+// read-only / dry-run semantics — is a contract the CLI and its companion
+// Skill depend on. Extend it additively and keep existing shapes and behavior
+// stable; do not reshape the public API to suit a single local call site.
 package apiclient
 
 import (
@@ -14,8 +21,8 @@ import (
 	"strings"
 	"sync"
 
-	cerrors "github.com/angelmsger/jenkins-cli/internal/errors"
-	"github.com/angelmsger/jenkins-cli/internal/transport"
+	cerrors "github.com/angelmsger/jenkins-cli/pkg/errors"
+	"github.com/angelmsger/jenkins-cli/pkg/transport"
 )
 
 // Client is the Jenkins API surface used by the CLI. Read methods cover the

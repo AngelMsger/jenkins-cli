@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/angelmsger/jenkins-cli/internal/config"
-	cerrors "github.com/angelmsger/jenkins-cli/internal/errors"
+	cerrors "github.com/angelmsger/jenkins-cli/pkg/errors"
 )
 
 // Resolve produces a Credential from configuration. A secret supplied via

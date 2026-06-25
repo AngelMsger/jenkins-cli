@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/angelmsger/jenkins-cli/internal/transport"
+	"github.com/angelmsger/jenkins-cli/pkg/transport"
 )
 
 // DefaultEndpoint is the GitHub API URL for the latest published release.

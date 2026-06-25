@@ -8,8 +8,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/angelmsger/jenkins-cli/internal/apiclient"
 	"github.com/angelmsger/jenkins-cli/internal/output"
+	"github.com/angelmsger/jenkins-cli/pkg/apiclient"
 	"github.com/spf13/cobra"
 )
 

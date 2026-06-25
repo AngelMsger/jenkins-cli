@@ -2,6 +2,10 @@
 // into the forms a coding agent can use directly: an absolute RFC3339 instant
 // and a compact relative phrase ("3h ago"). Hand-converting Jenkins' millis is
 // exactly the kind of footgun the CLI should absorb, not the agent.
+//
+// This package backs jenkins-cli and is also importable as a library; see the repository
+// README. Its rendered timestamp formats are consumed by agents parsing CLI
+// output — keep them stable and extend additively.
 package timeutil
 
 import (

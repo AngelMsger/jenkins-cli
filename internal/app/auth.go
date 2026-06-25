@@ -3,9 +3,9 @@ package app
 import (
 	"context"
 
-	"github.com/angelmsger/jenkins-cli/internal/apiclient"
 	"github.com/angelmsger/jenkins-cli/internal/auth"
-	cerrors "github.com/angelmsger/jenkins-cli/internal/errors"
+	"github.com/angelmsger/jenkins-cli/pkg/apiclient"
+	cerrors "github.com/angelmsger/jenkins-cli/pkg/errors"
 	"github.com/spf13/cobra"
 )
 

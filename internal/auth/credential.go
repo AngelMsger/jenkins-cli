@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	cerrors "github.com/angelmsger/jenkins-cli/internal/errors"
+	cerrors "github.com/angelmsger/jenkins-cli/pkg/errors"
 )
 
 // Scheme identifies an authentication scheme. Jenkins authenticates API

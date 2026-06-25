@@ -6,9 +6,9 @@ import (
 	"os"
 
 	"github.com/angelmsger/jenkins-cli/internal/cliflags"
-	cerrors "github.com/angelmsger/jenkins-cli/internal/errors"
 	"github.com/angelmsger/jenkins-cli/internal/output"
 	"github.com/angelmsger/jenkins-cli/pkg/constants"
+	cerrors "github.com/angelmsger/jenkins-cli/pkg/errors"
 	"github.com/spf13/cobra"
 )
 

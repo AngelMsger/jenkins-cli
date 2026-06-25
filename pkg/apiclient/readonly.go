@@ -3,7 +3,7 @@ package apiclient
 import (
 	"context"
 
-	cerrors "github.com/angelmsger/jenkins-cli/internal/errors"
+	cerrors "github.com/angelmsger/jenkins-cli/pkg/errors"
 )
 
 // readOnlyClient wraps a Client and blocks every mutating method before a

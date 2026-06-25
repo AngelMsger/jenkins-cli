@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	cerrors "github.com/angelmsger/jenkins-cli/internal/errors"
+	cerrors "github.com/angelmsger/jenkins-cli/pkg/errors"
 )
 
 // FlagValues carries the global CLI flags that override configuration. Empty

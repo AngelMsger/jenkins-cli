@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/angelmsger/jenkins-cli/internal/timeutil"
+	"github.com/angelmsger/jenkins-cli/pkg/timeutil"
 )
 
 // raw* mirror the Jenkins api/json shapes before normalization into our models.

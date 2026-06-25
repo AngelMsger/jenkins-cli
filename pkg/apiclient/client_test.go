@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	cerrors "github.com/angelmsger/jenkins-cli/internal/errors"
-	"github.com/angelmsger/jenkins-cli/internal/transport"
+	cerrors "github.com/angelmsger/jenkins-cli/pkg/errors"
+	"github.com/angelmsger/jenkins-cli/pkg/transport"
 )
 
 // newTestClient wires a Client to an httptest server with the given handler.

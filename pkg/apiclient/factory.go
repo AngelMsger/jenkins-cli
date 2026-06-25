@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	cerrors "github.com/angelmsger/jenkins-cli/internal/errors"
-	"github.com/angelmsger/jenkins-cli/internal/transport"
+	cerrors "github.com/angelmsger/jenkins-cli/pkg/errors"
+	"github.com/angelmsger/jenkins-cli/pkg/transport"
 )
 
 // BuildParams configures Build.

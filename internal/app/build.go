@@ -3,8 +3,8 @@ package app
 import (
 	"strings"
 
-	"github.com/angelmsger/jenkins-cli/internal/apiclient"
-	cerrors "github.com/angelmsger/jenkins-cli/internal/errors"
+	"github.com/angelmsger/jenkins-cli/pkg/apiclient"
+	cerrors "github.com/angelmsger/jenkins-cli/pkg/errors"
 	"github.com/spf13/cobra"
 )
 

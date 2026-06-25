@@ -201,6 +201,54 @@ stable exit codes: `0` success, `2` usage, `3` config, `4` auth, `5` permission,
 `6` not found, `7` rate limit, `8` network, `9` server, `10` parse, `11` conflict.
 Each error carries `next_steps` naming the command to run next.
 
+## Use as a Go library
+
+The HTTP client that powers the CLI is published as a standalone Go package, so a
+GUI or other tool can drive Jenkins directly — same normalized models and
+structured errors, without shelling out to the binary.
+
+```go
+import (
+	"context"
+	"encoding/base64"
+	"net/http"
+	"os"
+
+	api "github.com/angelmsger/jenkins-cli/pkg/apiclient"
+	cerr "github.com/angelmsger/jenkins-cli/pkg/errors"
+	"github.com/angelmsger/jenkins-cli/pkg/transport"
+)
+
+// Authentication is a transport.Decorator you supply — it sets the
+// Authorization header on every request. Jenkins uses HTTP Basic (user + API token):
+func basic(user, token string) transport.Decorator {
+	header := "Basic " + base64.StdEncoding.EncodeToString([]byte(user+":"+token))
+	return func(r *http.Request) { r.Header.Set("Authorization", header) }
+}
+
+ctx := context.Background()
+client, err := api.BuildClient(api.BuildParams{
+	BaseURL:       "https://jenkins.example.com",
+	AuthDecorator: basic(os.Getenv("JENKINS_USER"), os.Getenv("JENKINS_TOKEN")),
+})
+if err != nil { /* see error handling below */ }
+
+jobs, err := client.ListJobs(ctx, "", 0) // folder "" = instance root
+```
+
+Errors are `*errors.CLIError` with a stable `Category` and `Code`, so callers branch
+on failure kinds instead of parsing strings:
+
+```go
+if ce := cerr.AsCLIError(err); ce != nil {
+    // ce.Category, ce.Code, ce.Hint, ce.NextSteps, ce.HTTPStatus, ce.Retryable
+}
+```
+
+> These `pkg/...` packages primarily back this CLI and its companion Skill; their
+> exported surface is treated as a stable contract. Read the package doc comment
+> (`go doc ./pkg/apiclient`) before changing it.
+
 ## Development
 
 ```bash
