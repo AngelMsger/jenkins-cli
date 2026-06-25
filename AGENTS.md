@@ -10,7 +10,7 @@ repository. It is intentionally short.
    every change must follow.
 2. Then read, only as the task needs them, the docs under [`docs/`](docs/):
    [`technical-design.md`](docs/technical-design.md) (architecture and the
-   `internal/` packages — read before changing core behavior),
+   `internal/` and `pkg/` packages — read before changing core behavior),
    [`installation.md`](docs/installation.md) (install / setup / distribution UX),
    [`read-only-mode.md`](docs/read-only-mode.md) (the write-safety posture), and
    [`releasing.md`](docs/releasing.md) (versioning, tagging, the release/CI
@@ -29,14 +29,14 @@ architecture of the sibling `confluence-cli` / `bitbucket-cli` / `openobserve-cl
 - `internal/app` — one file per noun (job, build, queue, auth, config, doctor,
   skill); `root.go` assembles the tree; `context.go` holds the shared `appState`;
   `build_log.go` is the streaming `build log --follow`.
-- `internal/apiclient` — the Jenkins HTTP surface and models. One file per
+- `pkg/apiclient` — the Jenkins HTTP surface and models. One file per
   resource (jobs, builds, console, pipeline, tests, changes, queue, writes);
   `paths.go` maps human job paths and build refs to Jenkins URLs; `models.go`
   normalizes Jenkins JSON (color → status); `readonly.go` blocks the writes.
-- `internal/errors` — the `CLIError` model + exit-code map (0–11).
+- `pkg/errors` — the `CLIError` model + exit-code map (0–11).
 - `internal/output` — JSON / table / ndjson rendering, `{items,next,has_more}`.
 - `internal/config`, `internal/auth` — layered config + keychain credentials.
-- `internal/timeutil` — Jenkins epoch-millis → ISO instant + relative phrase.
+- `pkg/timeutil` — Jenkins epoch-millis → ISO instant + relative phrase.
 - `skills/jenkins` — the companion Skill, embedded into the binary.
 
 ## Ground rules

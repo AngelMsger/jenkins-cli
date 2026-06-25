@@ -3,7 +3,7 @@
 `jenkins-cli` is a Go + [Cobra](https://github.com/spf13/cobra) CLI for a
 developer's Jenkins debugging workflow, built to the agent-facing conventions it
 shares with its sibling projects (`confluence-cli`, `bitbucket-cli`,
-`openobserve-cli`). This document describes the architecture and the `internal/`
+`openobserve-cli`). This document describes the architecture and the `internal/` and `pkg/`
 package layout.
 
 ## Overview
@@ -11,7 +11,7 @@ package layout.
 A command flows through four layers:
 
 ```
-cmd/jenkins-cli  →  internal/app  →  internal/apiclient  →  internal/transport
+cmd/jenkins-cli  →  internal/app  →  pkg/apiclient  →  pkg/transport
    (process entry)       (cobra tree,      (Jenkins API       (retrying HTTP,
                           appState,         surface + models)       auth decorator)
                           rendering)
@@ -20,8 +20,8 @@ cmd/jenkins-cli  →  internal/app  →  internal/apiclient  →  internal/trans
 - `cmd/jenkins-cli/main.go` is a three-line entry point: `os.Exit(app.Execute())`.
 - `internal/app` builds the cobra command tree, resolves configuration and
   credentials, calls the API client, and renders the result.
-- `internal/apiclient` is the typed Jenkins API surface.
-- `internal/transport` is a flavor-agnostic retrying HTTP client.
+- `pkg/apiclient` is the typed Jenkins API surface.
+- `pkg/transport` is a flavor-agnostic retrying HTTP client.
 
 Cross-cutting packages — `errors`, `output`, `config`, `auth`, `timeutil`,
 `cliflags`, `constants` — are used across the layers.
@@ -51,7 +51,7 @@ finishes, with SIGINT/SIGTERM handling. The three write commands (`job build`,
 `build stop`, `queue cancel`) build a `--dry-run` preview from a pure
 `apiclient.*Plan` function and otherwise call the mutating client method.
 
-## API client (`internal/apiclient`)
+## API client (`pkg/apiclient`)
 
 `Client` is an interface (`client.go`); `apiClient` is the single
 implementation. One file per resource: `jobs.go`, `builds.go`, `console.go`,
@@ -77,14 +77,14 @@ implementation. One file per resource: `jobs.go`, `builds.go`, `console.go`,
 Read methods shape their responses with Jenkins' `?tree=` parameter so the
 default output stays a compact, high-signal map rather than a full object dump.
 
-## Transport (`internal/transport`)
+## Transport (`pkg/transport`)
 
 A thin `Client` that applies request decorators (auth, user-agent) and retries
 transient failures. Retries are limited to idempotent methods (GET/HEAD); a
 `Retry-After` header on 429/503 takes precedence over linear backoff. `Doer` is
 an interface so tests inject fakes.
 
-## Error model (`internal/errors`)
+## Error model (`pkg/errors`)
 
 Every failure is a `*CLIError` with `Category`, a stable `Code`, `Message`,
 `Hint`, `NextSteps`, `Retryable` and `HTTPStatus`. The category drives two
@@ -121,7 +121,7 @@ supplied via flags/env. The `Store` prefers the OS keychain (`go-keyring`) and
 falls back to a `0600` JSON file. A credential becomes a `transport.Decorator`
 that authenticates every request.
 
-## Time (`internal/timeutil`)
+## Time (`pkg/timeutil`)
 
 `FromMillis` converts Jenkins' epoch-millisecond timestamps to UTC; `HumanSince`
 renders a compact relative phrase (`3h ago`). Builds carry both an ISO
