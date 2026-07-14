@@ -15,11 +15,11 @@ func defaultGuidance(cat Category) (hint string, steps []string) {
 		return "The server rejected the credentials. The password/token may be wrong.",
 			[]string{"jenkins-cli auth status", "jenkins-cli config init"}
 	case CategoryPermission:
-		return "The credentials are valid but lack permission for this organization or resource.",
-			[]string{"jenkins-cli org list", "Verify the account can access this org in the web UI."}
+		return "The credentials are valid but lack permission for this Jenkins resource.",
+			[]string{"jenkins-cli job list", "Verify the account has the required Jenkins job or system permission in the web UI."}
 	case CategoryNotFound:
-		return "The requested organization, stream or resource does not exist.",
-			[]string{"jenkins-cli org list", "jenkins-cli stream list"}
+		return "The requested Jenkins job, build or queue item does not exist.",
+			[]string{"jenkins-cli job list", "jenkins-cli build list <job-path>", "jenkins-cli queue list"}
 	case CategoryConflict:
 		return "The resource changed since it was last read (version conflict).",
 			[]string{"Re-fetch the resource to get its current state, then retry."}

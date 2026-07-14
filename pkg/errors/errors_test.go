@@ -55,14 +55,18 @@ func TestRetryableDefaults(t *testing.T) {
 }
 
 func TestPayloadShape(t *testing.T) {
-	e := New(CategoryNotFound, "STREAM_NOT_FOUND", "no such stream").
-		WithNextSteps("jenkins-cli stream list").
-		WithHTTPStatus(404)
+	e := New(CategoryNotFound, "JOB_NOT_FOUND", "no such job").
+		WithNextSteps("jenkins-cli job list").
+		WithHTTPStatus(404).
+		WithRecovery(Recovery{Action: "retry_current_command", Scope: "host", Requires: []string{"os_keychain"}})
 	p := e.Payload()
-	if p.Error.Code != "STREAM_NOT_FOUND" || p.Error.Category != CategoryNotFound {
+	if p.Error.Code != "JOB_NOT_FOUND" || p.Error.Category != CategoryNotFound {
 		t.Errorf("unexpected payload: %+v", p.Error)
 	}
 	if len(p.Error.NextSteps) != 1 || p.Error.HTTPStatus != 404 {
 		t.Errorf("payload missing next_steps/http_status: %+v", p.Error)
+	}
+	if p.Error.Recovery == nil || p.Error.Recovery.Scope != "host" {
+		t.Errorf("payload missing recovery: %+v", p.Error)
 	}
 }

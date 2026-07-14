@@ -1,6 +1,6 @@
 ---
 name: jenkins
-version: 0.1.1
+version: 0.1.2
 description: "Inspect Jenkins for a developer's debugging workflow from the command line: discover jobs, folders and multibranch branches/PRs; read build status and history; find why a build failed — which pipeline stage broke, the failing test cases, the console log, and the SCM commits in a build; list and inspect the build queue; and trigger or stop builds. Agent-friendly JSON with structured errors; works with any Jenkins instance. Use this skill when the user mentions Jenkins or CI, gives a Jenkins job or build URL, or asks: what is the build status, did the latest build pass or fail, when did it last succeed/fail, why is the build red / failing, show the console log / build output, which stage failed, which tests are failing, what changed in a build, is anything queued — or to trigger / rebuild / start / stop / abort / cancel a build. Set up with `jenkins-cli config init`, or JENKINS_URL / JENKINS_USER / JENKINS_TOKEN env vars. Inspection is read-only; build trigger and stop are writes that need --allow-writes."
 metadata:
   requires:
@@ -59,6 +59,15 @@ Don't invent a job path or a build number. Job paths are `folder/job[/branch]`
   [getting-started.md](references/getting-started.md).
 - Anything fails → read the error's `next_steps`. See
   [errors-and-exit-codes.md](references/errors-and-exit-codes.md).
+
+## Configuration & credentials (agents)
+
+Assume an already-configured user wants you to reuse their host config and OS
+keychain. If an error is `CREDENTIAL_STORE_INACCESSIBLE` or
+`CREDENTIAL_NOT_VISIBLE_OR_MISSING`, or has `recovery.scope=host`, request host
+access and retry the same command once. Do not run `config init` / `auth login`
+inside the sandbox; only ask the user to configure credentials when the host
+retry also reports them missing. See [getting-started.md](references/getting-started.md).
 
 ## Guardrails
 

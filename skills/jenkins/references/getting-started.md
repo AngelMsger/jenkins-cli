@@ -32,11 +32,23 @@ also works non-interactively for scripted setup.
 `auth login` is the lighter form: it re-prompts only for credentials of the
 already-configured context.
 
-## Headless setup (CI, agent sandboxes)
+## For agents and sandboxes
 
-There is no TTY, so `config init` / `auth login` fail fast with a structured
-error instead of hanging. Provide everything via environment variables — they
-take precedence over the config file and keychain:
+The user has normally configured Jenkins already. Reuse their host config under
+`~/.angelmsger/jenkins/` and OS keychain. If credential resolution returns
+`CREDENTIAL_STORE_INACCESSIBLE` or `CREDENTIAL_NOT_VISIBLE_OR_MISSING` with
+`recovery.scope=host`, request host access and retry the same invocation once.
+Do not run `config init` or `auth login` inside the sandbox.
+
+Only when the host retry also reports missing credentials should the user
+configure them in their terminal or provide environment variables. The CLI
+cannot and must not elevate itself; `recovery.scope=host` is an instruction to
+the Agent host or approval layer.
+
+## Headless setup (CI and genuinely unconfigured environments)
+
+Provide everything via environment variables; they take precedence over the
+config file and keychain:
 
 ```
 export JENKINS_URL=https://jenkins.example.com
