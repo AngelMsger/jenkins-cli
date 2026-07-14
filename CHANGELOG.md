@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   longer steer sandboxed agents toward re-running `config init`. Default
   permission/not-found guidance now points to Jenkins jobs, builds and queue
   commands instead of copied OpenObserve organization/stream commands.
+- Local cross-build artifacts under `dist/` are now ignored and removed by
+  `make clean`, keeping release preparation from dirtying the worktree.
 
 ## [0.3.0] - 2026-06-29
 
