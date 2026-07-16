@@ -122,7 +122,8 @@ wire (`Basic base64(username:secret)`): `token` (username + API token,
 recommended) and `basic` (username + password). `Resolve` produces a validated
 `Credential` from config + secrets, loading the secret from the keychain when not
 supplied via flags/env. The `Store` prefers the OS keychain (`go-keyring`) and
-falls back to a `0600` JSON file. A credential becomes a `transport.Decorator`
+falls back to a per-user DPAPI-encrypted file on Windows or a `0600` JSON file
+on macOS/Linux. A credential becomes a `transport.Decorator`
 that authenticates every request. Store access errors are preserved rather than
 collapsed into "missing": `CREDENTIAL_STORE_INACCESSIBLE` and
 `CREDENTIAL_NOT_VISIBLE_OR_MISSING` carry a host-scope recovery instruction so

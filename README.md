@@ -138,8 +138,9 @@ jenkins-cli build log my-app --follow           # stream a running build to comp
 
 Settings resolve in precedence order (highest first): CLI flags → environment
 variables (`JENKINS_*`) → `.env` → `~/.angelmsger/jenkins/config.yaml` →
-defaults. Secrets are stored in the OS keychain (with a `0600` file fallback) and
-never written to the config file.
+defaults. Secrets are stored in the OS keychain. If Windows Credential Manager
+is unavailable, the fallback is encrypted with per-user DPAPI; macOS/Linux
+retain the `0600` fallback. Secrets are never written to the config file.
 
 Authenticate with your Jenkins **username + API token** (User → Configure → API
 Token). For headless / CI / agent use, configure entirely from the environment:
