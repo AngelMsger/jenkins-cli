@@ -200,7 +200,8 @@ jenkins-cli --use-context prod job list     # override for one command
 Failures are JSON on **stderr** (stdout stays a clean data channel) and map to
 stable exit codes: `0` success, `2` usage, `3` config, `4` auth, `5` permission,
 `6` not found, `7` rate limit, `8` network, `9` server, `10` parse, `11` conflict.
-Each error carries `next_steps` naming the command to run next.
+Each error carries `next_steps` naming the command to run next, and `retryable`
+to guide back-off.
 
 ## Use as a Go library
 
@@ -278,6 +279,7 @@ built for coding agents. Browse the full set at
 - **[bitbucket-cli](https://github.com/AngelMsger/bitbucket-cli)** — Bitbucket pull requests & code review
 - **[openobserve-cli](https://github.com/AngelMsger/openobserve-cli)** — OpenObserve logs, metrics & traces
 - **jenkins-cli** — inspect Jenkins jobs & builds *(this project)*
+- **[jira-cli](https://github.com/AngelMsger/jira-cli)** — Jira issues & workflow transitions
 
 ## License
 
