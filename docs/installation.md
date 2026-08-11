@@ -80,13 +80,13 @@ shell.
 ## 3. Install the companion Skill
 
 The `jenkins` Skill is embedded in the binary, so it always matches the CLI
-version. `skill install` detects your coding agents (Claude Code, Codex, Grok Build) and
+version. `skill install` detects your coding agents (Claude Code, Codex, Grok Build, Pi, Pi) and
 installs into each:
 
 ```bash
 jenkins-cli skill install                 # auto-detect, install for each agent
 jenkins-cli skill install --agent codex   # target one agent
-jenkins-cli skill install --project       # into ./.claude/skills, ./.agents/skills, ./.grok/skills
+jenkins-cli skill install --project       # into ./.claude/skills, ./.agents/skills, ./.grok/skills, ./.pi/skills
 jenkins-cli skill uninstall               # remove it
 jenkins-cli skill path                     # show where it would install, and status
 ```

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-08-11
+
+### Added
+
+- **Pi skill install target.** `skill install` now deploys the companion Skill
+  for Pi (`--agent pi`) to `~/.pi/agent/skills/<name>` globally and
+  `./.pi/skills/<name>` with `--project`. Auto-detection probes `~/.pi` /
+  `./.pi` alongside Claude Code, Codex, and Grok Build. Installation guides,
+  generated CLI docs, and agent help text list the new target.
+
+
 ## [0.6.0] - 2026-08-11
 
 ### Added
@@ -194,7 +205,8 @@ workflow.
   release binaries and `make install`. A generated CLI reference (`docs/cli/`)
   and a GitHub Pages landing page.
 
-[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/AngelMsger/jenkins-cli/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/AngelMsger/jenkins-cli/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/AngelMsger/jenkins-cli/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/AngelMsger/jenkins-cli/compare/v0.3.0...v0.4.0
