@@ -1,6 +1,6 @@
 {
   "name": "@angelmsger/jenkins-cli",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Inspect Jenkins from the command line for coding agents: discover jobs and builds, read status, console logs, pipeline stages, test failures and SCM changes, and trigger or stop builds, with structured JSON output.",
   "keywords": [
     "jenkins",

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-08-12
+
+### Added
+
+- **Broader skill install agent matrix.** `skill install` now treats Cursor,
+  the shared Agents tree, Gemini CLI, GitHub Copilot, OpenCode, Continue,
+  Windsurf, Kilo Code, and Roo Code as first-class targets alongside Claude
+  Code, Codex, Grok Build, and Pi (13 agents total). Auto-detection probes
+  each product's home and project markers; `--agent` accepts the full id
+  list. Installation guides, generated CLI docs, and help text stay in sync.
+
+
 ## [0.6.1] - 2026-08-11
 
 ### Added
@@ -205,7 +217,8 @@ workflow.
   release binaries and `make install`. A generated CLI reference (`docs/cli/`)
   and a GitHub Pages landing page.
 
-[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.6.2...HEAD
+[0.6.2]: https://github.com/AngelMsger/jenkins-cli/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/AngelMsger/jenkins-cli/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/AngelMsger/jenkins-cli/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/AngelMsger/jenkins-cli/compare/v0.4.0...v0.5.0

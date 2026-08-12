@@ -65,7 +65,7 @@ is published at <https://angelmsger.github.io/jenkins-cli/cli/>.
 
 | Command | Description |
 | --- | --- |
-| [`jenkins-cli skill`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-skill) | Install the companion Skill for coding agents (Claude Code, Codex, Grok Build, Pi) |
+| [`jenkins-cli skill`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-skill) | Install the companion Skill for coding agents |
 | [`jenkins-cli skill install`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-skill-install) | Deploy the embedded Skill into a coding agent's skills directory |
 | [`jenkins-cli skill path`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-skill-path) | Print where the Skill would be installed, and whether it is |
 | [`jenkins-cli skill show`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-skill-show) | Print the embedded SKILL.md to stdout |
