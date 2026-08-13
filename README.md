@@ -56,7 +56,7 @@ $ jenkins-cli build get my-app lastFailed
   YAML config file, or an interactive wizard; multiple named server *contexts*;
   secrets stored in the OS keychain.
 - **Companion Skill** — a `jenkins` Skill, embedded in the binary, that guides
-  coding agents (Claude Code, Codex, Grok Build, Pi) through the CLI.
+  coding agents through the CLI.
 
 > **Scope (v0.1):** a developer's inspection workflow over jobs and builds, plus
 > the two high-frequency writes (trigger / stop a build) and queue cancel.
