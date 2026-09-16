@@ -162,16 +162,18 @@ type Artifact struct {
 
 // QueueItem is one entry in the build queue (a build waiting to start).
 type QueueItem struct {
-	ID           int    `json:"id"`
-	Why          string `json:"why,omitempty"`
-	Task         string `json:"task,omitempty"` // the job name the item will build
-	URL          string `json:"url,omitempty"`
-	Blocked      bool   `json:"blocked"`
-	Buildable    bool   `json:"buildable"`
-	Stuck        bool   `json:"stuck"`
-	Pending      bool   `json:"pending"`
-	InQueueSince string `json:"in_queue_since,omitempty"`
-	Params       string `json:"params,omitempty"`
+	ID           int       `json:"id"`
+	Why          string    `json:"why,omitempty"`
+	Task         string    `json:"task,omitempty"` // the job name the item will build
+	URL          string    `json:"url,omitempty"`
+	Blocked      bool      `json:"blocked"`
+	Buildable    bool      `json:"buildable"`
+	Stuck        bool      `json:"stuck"`
+	Pending      bool      `json:"pending"`
+	Cancelled    bool      `json:"cancelled"`
+	Executable   *BuildRef `json:"executable,omitempty"`
+	InQueueSince string    `json:"in_queue_since,omitempty"`
+	Params       string    `json:"params,omitempty"`
 }
 
 // QueueRef points at a queued build created by triggering a job.

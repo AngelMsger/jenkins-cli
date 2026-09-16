@@ -64,14 +64,12 @@ together.
   [CHANGELOG.md](CHANGELOG.md) for any user-visible change.
 - **Never commit** credentials, `.env`, `dist/`, `bin/`, or build artifacts.
 
-### Adding a write command (post-v0.1)
+### Extending commands and agent workflows
 
-v0.1 is read-only. Write commands (dashboards, alerts, functions, users,
-ingest) must: support `--dry-run` (emit the would-be request plan), require
-`--yes` for destructive operations, route through `apiclient.NewReadOnly` (which
-must override the new method to return a `READONLY_BLOCKED` error), and keep the
-`{items, next, has_more}` and structured-error contract. See
-[docs/read-only-mode.md](docs/read-only-mode.md).
+Follow the [agent guide](AGENTS.md) for new write commands, Skill synchronization,
+exact-build diagnosis and executable documentation examples. The current writes
+are build trigger/stop and queue cancellation; see
+[read-only mode](docs/read-only-mode.md) for their safety boundary.
 
 ## Commits and pull requests
 

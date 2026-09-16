@@ -27,9 +27,14 @@ func newBuildLogCmd(s *appState) *cobra.Command {
 		Short: "Print a build's console output",
 		Long: "Prints the build's console log as plain text to stdout. Use --start to\n" +
 			"resume from a byte offset, or --follow to stream new output until the\n" +
-			"build finishes (Ctrl-C to stop). ref defaults to the latest build.",
-		Example: "  jenkins-cli build log my-app lastFailed\n" +
-			"  jenkins-cli build log my-app --follow",
+			"build finishes (Ctrl-C to stop). ref defaults to the latest build.\n" +
+			"Resolve a permalink with build get and reuse its number before resuming\n" +
+			"or following: offsets belong to one build. --timeout limits each request,\n" +
+			"not the overall follow loop. Agents should set a host-side deadline.",
+		Example: "  jenkins-cli build get my-app lastFailed\n" +
+			"  # If build get returned number 128:\n" +
+			"  jenkins-cli build log my-app 128\n" +
+			"  jenkins-cli build log my-app 128 --start 1024 --follow",
 		Args: cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			path, ref := pathAndRef(args)

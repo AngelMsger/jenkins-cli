@@ -63,6 +63,13 @@ func route(w http.ResponseWriter, r *http.Request) {
 		}
 	case path == "/queue/api/json":
 		writeJSON(w, queue())
+	case path == "/queue/item/77/api/json":
+		writeJSON(w, map[string]any{"id": 77, "cancelled": false,
+			"task":       map[string]any{"name": "app", "url": "http://x/job/app/"},
+			"executable": map[string]any{"number": 8, "url": "http://x/job/app/8/"}})
+	case path == "/queue/item/78/api/json":
+		writeJSON(w, map[string]any{"id": 78, "cancelled": true,
+			"task": map[string]any{"name": "app", "url": "http://x/job/app/"}})
 	case strings.HasSuffix(path, "/logText/progressiveText"):
 		w.Header().Set("X-More-Data", "false")
 		body := "[Pipeline] sh\n+ make test\nFAIL: TestThing\nBuild step failed\n"

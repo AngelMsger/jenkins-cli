@@ -68,7 +68,7 @@
       <div class="card feat">
         <div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg></div>
         <h3>Console logs</h3>
-        <p><code>build log</code> prints raw, grep-able console output; <code>--follow</code> streams a running build to completion via Jenkins' progressive log.</p>
+        <p><code>build log</code> reads a console snapshot. For monitoring, pin the build number before <code>--follow</code> and set a host deadline and output budget; <code>--timeout</code> bounds each request.</p>
       </div>
       <div class="card feat">
         <div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V4"/><path d="M4 20h16"/><rect x="7" y="12" width="3" height="5"/><rect x="12" y="8" width="3" height="9"/><rect x="17" y="5" width="3" height="12"/></svg></div>
@@ -154,15 +154,19 @@ npm install -g @angelmsger/jenkins-cli</pre>
 <span class="p">$</span> jenkins-cli job list
 <span class="p">$</span> jenkins-cli job get my-team/my-app
 
-<span class="c"># why is the latest build red?</span>
+<span class="c"># select the failure, then reuse its number (example: 128)</span>
 <span class="p">$</span> jenkins-cli build get my-app lastFailed
-<span class="p">$</span> jenkins-cli build stages my-app lastFailed
-<span class="p">$</span> jenkins-cli build tests my-app lastFailed --failed-only
-<span class="p">$</span> jenkins-cli build log my-app lastFailed | tail -n 80
+<span class="p">$</span> jenkins-cli build stages my-app 128
+<span class="p">$</span> jenkins-cli build tests my-app 128 --failed-only
+<span class="p">$</span> set -o pipefail
+<span class="p">$</span> jenkins-cli build log my-app 128 | tail -n 80
 
-<span class="c"># trigger a build and watch it (writes; preview first)</span>
+<span class="c"># preview and perform an authorized trigger</span>
 <span class="p">$</span> jenkins-cli job build my-app --param BRANCH=main --dry-run
-<span class="p">$</span> jenkins-cli build log my-app --follow</pre>
+<span class="p">$</span> jenkins-cli job build my-app --param BRANCH=main --allow-writes
+<span class="c"># use queue.queue_id, then executable.number (example values)</span>
+<span class="p">$</span> jenkins-cli queue get 77
+<span class="p">$</span> jenkins-cli build get my-app 129</pre>
     </div>
   </div>
 </section>
@@ -185,7 +189,7 @@ npm install -g @angelmsger/jenkins-cli</pre>
       </a>
       <a class="card cmd-group" href="cli/#jenkins-cli-queue">
         <span class="cg-name">queue</span>
-        <p>List builds waiting to run; cancel a queued one.</p>
+        <p>Inspect waiting or cancelled requests and their assigned build numbers; cancel a queued one.</p>
       </a>
       <a class="card cmd-group" href="cli/#jenkins-cli-auth">
         <span class="cg-name">auth</span>

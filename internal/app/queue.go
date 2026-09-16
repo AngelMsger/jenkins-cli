@@ -50,7 +50,12 @@ func newQueueGetCmd(s *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get <id>",
 		Short: "Get one queue item",
-		Args:  cobra.ExactArgs(1),
+		Long: "Returns a queue item's waiting reason, cancellation state, and assigned\n" +
+			"build under executable (number and URL) once it starts. Use that number\n" +
+			"with build get or build log; do not substitute the job's latest build.\n" +
+			"A missing executable means no build assignment is available yet; a 404\n" +
+			"does not prove that the item started or was cancelled.",
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id, err := parseQueueID(args[0])
 			if err != nil {

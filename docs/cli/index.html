@@ -222,7 +222,10 @@ many builds come back.</p>
       <pre>jenkins-cli build log &lt;path&gt; [ref] [flags]</pre>
       <p class="long">Prints the build&#39;s console log as plain text to stdout. Use --start to
 resume from a byte offset, or --follow to stream new output until the
-build finishes (Ctrl-C to stop). ref defaults to the latest build.</p>
+build finishes (Ctrl-C to stop). ref defaults to the latest build.
+Resolve a permalink with build get and reuse its number before resuming
+or following: offsets belong to one build. --timeout limits each request,
+not the overall follow loop. Agents should set a host-side deadline.</p>
       <h3>Options</h3>
       <table>
         <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
@@ -231,8 +234,10 @@ build finishes (Ctrl-C to stop). ref defaults to the latest build.</p>
         <tr><td><code>--start</code></td><td><code>0</code></td><td>start byte offset into the console log</td></tr>
         </tbody>
       </table>
-      <h3>Examples</h3><pre>  jenkins-cli build log my-app lastFailed
-  jenkins-cli build log my-app --follow</pre>
+      <h3>Examples</h3><pre>  jenkins-cli build get my-app lastFailed
+<span class="c">  # If build get returned number 128:</span>
+  jenkins-cli build log my-app 128
+  jenkins-cli build log my-app 128 --start 1024 --follow</pre>
     </section>
     
     <section class="cmd" id="jenkins-cli-build-stages">
@@ -456,7 +461,11 @@ read-only mode unless --allow-writes is given.</p>
       <h2>jenkins-cli queue get</h2>
       <p class="short">Get one queue item</p>
       <pre>jenkins-cli queue get &lt;id&gt;</pre>
-      
+      <p class="long">Returns a queue item&#39;s waiting reason, cancellation state, and assigned
+build under executable (number and URL) once it starts. Use that number
+with build get or build log; do not substitute the job&#39;s latest build.
+A missing executable means no build assignment is available yet; a 404
+does not prove that the item started or was cancelled.</p>
       
       
     </section>

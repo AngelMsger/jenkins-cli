@@ -58,7 +58,7 @@ $ jenkins-cli build get my-app lastFailed
 - **Companion Skill** — a `jenkins` Skill, embedded in the binary, that guides
   coding agents through the CLI.
 
-> **Scope (v0.1):** a developer's inspection workflow over jobs and builds, plus
+> **Scope:** a developer's inspection workflow over jobs and builds, plus
 > the two high-frequency writes (trigger / stop a build) and queue cancel.
 > Jenkins' control plane — creating and configuring jobs, credentials, nodes,
 > Configuration-as-Code — is on the roadmap; the read-only wrapper and `--dry-run`
@@ -122,17 +122,29 @@ jenkins-cli doctor                # verify configuration and connectivity
 jenkins-cli job list                       # discover jobs (the map)
 jenkins-cli job get my-team/my-app          # one job: params, branches, last builds
 
-# why is the latest build red?
-jenkins-cli build get my-app lastFailed         # result, timing, what triggered it
-jenkins-cli build stages my-app lastFailed      # which Pipeline stage failed
-jenkins-cli build tests my-app lastFailed --failed-only   # the failing test cases
-jenkins-cli build log my-app lastFailed | tail -n 80      # the console output
+# inspect the most recent failure, then reuse its returned number (e.g. 128)
+jenkins-cli build get my-app lastFailed
+jenkins-cli build stages my-app 128
+jenkins-cli build tests my-app 128 --failed-only
+set -o pipefail
+jenkins-cli build log my-app 128 | tail -n 80
 
-# trigger and watch a build (writes; preview first)
+# preview and perform an authorized trigger
 jenkins-cli job build my-app --param BRANCH=main --dry-run
 jenkins-cli job build my-app --param BRANCH=main --allow-writes
-jenkins-cli build log my-app --follow           # stream a running build to completion
+jenkins-cli queue get 77                       # use queue.queue_id from the trigger
+jenkins-cli build get my-app 129               # use executable.number from the queue
 ```
+
+The numeric examples above stand for returned identifiers. `lastFailed` can be
+older than the latest run. A queue item exposes `cancelled` and, once assigned,
+`executable: {number, url}`; its existing `url` is still the job URL. Poll within
+a deadline and never replace an unavailable queue handoff with `last`.
+
+Log snapshots are the default. `tail` bounds displayed lines, not downloaded
+bytes. For requested monitoring, pin the number before `--follow` and set a
+host-side deadline/output budget; `--timeout` applies to individual requests.
+See the [diagnosis workflow](skills/jenkins/references/console-and-failures.md).
 
 ## Configuration
 

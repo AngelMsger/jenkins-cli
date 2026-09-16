@@ -2,6 +2,7 @@ package apiclient
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -197,6 +198,61 @@ func TestQueue(t *testing.T) {
 	}
 	if len(items) != 1 || items[0].ID != 42 || items[0].Task != "app" || !items[0].Blocked {
 		t.Fatalf("queue = %+v", items)
+	}
+}
+
+func TestQueueItemLifecycle(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		body      string
+		cancelled bool
+		build     int
+	}{
+		{"queued", `{"id":51,"blocked":true,"why":"Waiting","task":{"name":"app","url":"http://x/job/app/"}}`, false, 0},
+		{"started", `{"id":51,"cancelled":false,"executable":{"number":128,"url":"http://x/job/app/128/"},"task":{"name":"app","url":"http://x/job/app/"}}`, false, 128},
+		{"cancelled", `{"id":51,"cancelled":true,"executable":null,"task":{"name":"app","url":"http://x/job/app/"}}`, true, 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			client, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/queue/item/51/api/json" {
+					t.Errorf("path = %q", r.URL.Path)
+				}
+				for _, field := range []string{"cancelled", "executable[number,url]"} {
+					if !strings.Contains(r.URL.Query().Get("tree"), field) {
+						t.Errorf("queue request omits %s", field)
+					}
+				}
+				w.Write([]byte(tc.body))
+			})
+			item, err := client.GetQueueItem(context.Background(), 51)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if item.ID != 51 || item.URL != "http://x/job/app/" || item.Cancelled != tc.cancelled {
+				t.Fatalf("queue item = %+v", item)
+			}
+			if tc.build == 0 {
+				if item.Executable != nil {
+					t.Errorf("unexpected executable = %+v", item.Executable)
+				}
+			} else if item.Executable == nil || item.Executable.Number != tc.build || item.Executable.URL != "http://x/job/app/128/" {
+				t.Errorf("executable = %+v", item.Executable)
+			}
+			data, err := json.Marshal(item)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var fields map[string]json.RawMessage
+			if err := json.Unmarshal(data, &fields); err != nil {
+				t.Fatal(err)
+			}
+			if _, ok := fields["cancelled"]; !ok {
+				t.Error("cancelled must be present even when false")
+			}
+			if _, ok := fields["executable"]; ok != (tc.build != 0) {
+				t.Errorf("executable presence = %v, build = %d", ok, tc.build)
+			}
+		})
 	}
 }
 

@@ -70,3 +70,11 @@ same commit**. Agents read the Skill instead of `--help`, so a capability it omi
 effectively does not exist for them; a flag whose help text points at another
 command must have that command listed in the Skill, and no Skill claim may
 contradict the code.
+
+Diagnosis examples must resolve moving build selectors once and reuse the
+numeric build across stages, tests, logs and changes. Queue handoff uses
+`executable.number`; a missing queue item is not evidence of a started build.
+Keep unavailable-report errors neutral and preserve the selected run in recovery
+steps. Agent monitoring needs an overall host deadline and output budget;
+`--timeout` bounds individual requests. Execute shell recovery examples against
+stubbed exit codes in tests, rather than asserting policy prose.

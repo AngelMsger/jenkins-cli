@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/angelmsger/jenkins-cli/pkg/apiclient"
@@ -100,7 +101,7 @@ func newBuildStagesCmd(s *appState) *cobra.Command {
 			}
 			run, err := client.Stages(ctx, path, ref)
 			if err != nil {
-				return notPipelineHint(err)
+				return notPipelineHint(err, path, ref)
 			}
 			return s.emit(run)
 		},
@@ -127,7 +128,7 @@ func newBuildTestsCmd(s *appState) *cobra.Command {
 			}
 			report, err := client.Tests(ctx, path, ref)
 			if err != nil {
-				return noTestsHint(err)
+				return noTestsHint(err, path, ref)
 			}
 			if failedOnly {
 				report.Cases = filterFailed(report.Cases)
@@ -242,27 +243,36 @@ func filterFailed(cases []apiclient.TestCase) []apiclient.TestCase {
 
 // notPipelineHint augments a 404 from the stages endpoint with Pipeline-specific
 // guidance.
-func notPipelineHint(err error) error {
+func notPipelineHint(err error, path, ref string) error {
 	ce := cerrors.AsCLIError(err)
 	if ce != nil && ce.Code == "HTTP_NOT_FOUND" {
 		return cerrors.New(cerrors.CategoryNotFound, "NOT_PIPELINE",
 			"no stage data for that build").
-			WithHint("`build stages` works only for Pipeline / multibranch jobs. "+
-				"For a freestyle job, use `build log` and `build tests` instead.").
-			WithNextSteps("jenkins-cli build get <path>", "jenkins-cli build log <path>")
+			WithHint("The stages endpoint returned 404; this does not establish the job type. "+
+				"Verify the same build exists and inspect its console; stage reporting may be unavailable.").
+			WithHTTPStatus(ce.HTTPStatus).
+			WithNextSteps(buildRecoveryStep("get", path, ref), buildRecoveryStep("log", path, ref))
 	}
 	return err
 }
 
 // noTestsHint augments a 404 from the test report endpoint.
-func noTestsHint(err error) error {
+func noTestsHint(err error, path, ref string) error {
 	ce := cerrors.AsCLIError(err)
 	if ce != nil && ce.Code == "HTTP_NOT_FOUND" {
 		return cerrors.New(cerrors.CategoryNotFound, "NO_TEST_REPORT",
-			"that build has no test report").
-			WithHint("The build did not publish test results (no JUnit/xUnit step, or it "+
-				"failed before tests ran). Check the console log for the failure.").
-			WithNextSteps("jenkins-cli build log <path>", "jenkins-cli build stages <path>")
+			"no test report is available at that build reference").
+			WithHint("The test-report endpoint returned 404. Verify the same build exists, "+
+				"then inspect its console; this alone does not show whether tests ran or passed.").
+			WithHTTPStatus(ce.HTTPStatus).
+			WithNextSteps(buildRecoveryStep("get", path, ref), buildRecoveryStep("log", path, ref))
 	}
 	return err
+}
+
+func buildRecoveryStep(verb, path, ref string) string {
+	if ref == "" {
+		ref = "last"
+	}
+	return fmt.Sprintf("Run `jenkins-cli build %s` with path %q and ref %q; retain this run when investigating.", verb, path, ref)
 }

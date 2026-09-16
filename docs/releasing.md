@@ -124,7 +124,7 @@ Skill that matches the CLI version; users deploy it with `jenkins-cli skill
 install`. The Skill is also published in the git repository for the `npx skills`
 workflow.
 
-The Skill is versioned via the `version:` field in
+The Skill has its own version, separate from the CLI, via the `version:` field in
 `skills/jenkins/SKILL.md`. Bump it whenever the Skill or its `references/`
 change. A test (`assets_test.go`) guards the Skill `description` against Codex's
 1024-character limit so it can't regress.

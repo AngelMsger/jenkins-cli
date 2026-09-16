@@ -33,36 +33,61 @@ jenkins-cli build stages my-app/feature%2Flogin last   # use the path verbatim
 
 `build stages <path> [ref]` returns the Pipeline run's stages from Jenkins'
 `wfapi`, each with `status` and `duration`. This is the quickest way to see
-which stage failed. It applies to Pipeline / multibranch jobs only; a freestyle
-job returns `NOT_PIPELINE`.
+which stage failed. Resolve `[ref]` to a numeric build first. A stages-endpoint
+404 becomes `NOT_PIPELINE`; verify the selected build and job kind before
+concluding that stage reporting is unsupported.
 
 ## Test results
 
 ```
-jenkins-cli build tests my-app lastCompleted               # totals + every case
-jenkins-cli build tests my-app lastCompleted --failed-only  # just the failures
+jenkins-cli build get my-app lastCompleted                 # capture number (e.g. 128)
+jenkins-cli build tests my-app 128 --failed-only            # just the failures
 ```
 
 Returns `total` / `passed` / `failed` / `skipped`, then the individual cases.
 `--failed-only` keeps just the failing/regressed cases — each with its
 `class_name`, `name`, `error_details` and `error_stack` — which is the
-high-signal view when triaging. `NO_TEST_REPORT` means the build published no
-test results (no JUnit step, or it failed before tests ran) — read the console
-log instead.
+high-signal view when triaging. `NO_TEST_REPORT` means the report endpoint
+returned 404. Verify the same build exists and inspect its console; the error
+alone cannot tell whether tests ran, passed or failed before publishing results.
 
-## Triggering and stopping builds
+## Triggering, stopping and cancelling
 
-Triggering and stopping are **writes**. Preview them first with `--dry-run`
-(which sends nothing and needs no special permission):
+Use the write authorization and scope rules in the main Skill. Inspect `job get`
+for supported parameters before triggering; use the exact running build number
+or queue id for a stop/cancel. Preview the intended write with `--dry-run`,
+then perform the authorized action once:
 
+```bash
+jenkins-cli job build my-app --param BRANCH=main --dry-run
+jenkins-cli job build my-app --param BRANCH=main
+jenkins-cli build stop my-app 128 --dry-run
+jenkins-cli build stop my-app 128
+jenkins-cli queue cancel 51 --dry-run
+jenkins-cli queue cancel 51
 ```
-jenkins-cli job build my-app --param BRANCH=main --param CLEAN=true --dry-run
-jenkins-cli job build my-app --param BRANCH=main            # actually trigger
-jenkins-cli build stop my-app 128                           # abort build #128
-jenkins-cli queue cancel 51                                 # drop a queued build
-```
 
-In a read-only session these are blocked (`READONLY_BLOCKED`) until you add
-`--allow-writes`. A successful `job build` returns the queue item the build was
-scheduled into; poll it with `queue get <id>`, or watch the build with
-`build log --follow` once it starts.
+These are independent examples, not a sequence to execute together. In a
+configured read-only session, an authorized write needs `--allow-writes`; do
+not add it when the user requested inspection only. If a write's outcome is
+uncertain, inspect state before retrying to avoid triggering duplicate builds.
+
+## Follow the triggered build
+
+A successful `job build` returns `queue.queue_id` and `queue.queue_url`. Poll
+that id with `queue get <id>` at a bounded interval (for example, every five
+seconds for up to a minute):
+
+- `cancelled: true`: the queued request was cancelled; stop monitoring it.
+- `executable.number` and `executable.url`: the assigned build. Reuse the
+  original job path and this number for `build get` and `build log`.
+- No executable and not cancelled: report `why`/`blocked`/`stuck` as available,
+  then wait within the polling budget. This is not evidence of a started build.
+- A 404 or missing queue id: the handoff is unavailable. Report that limitation;
+  never substitute `last` or assume success, cancellation or permission to
+  trigger again.
+
+The queue item's existing `url` remains the **job URL**, not its assigned
+build URL. Once a build number is known, default to a one-shot status/log read.
+Use the [console monitoring rules](console-and-failures.md#3-read-a-bounded-excerpt)
+for an explicitly requested follow-up stream.

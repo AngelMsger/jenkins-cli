@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-09-16
+
+### Added
+
+- Queue items expose `cancelled` and optional `executable.number` / `url`, so a
+  triggered request can be followed to its assigned build without guessing the
+  latest run. The queue item's existing `url` remains the job URL.
+
+### Fixed
+
+- Missing stage/test endpoints no longer claim that the job is freestyle or
+  tests did not run; recovery guidance preserves the requested job and build.
+- The Skill's shell recovery example preserves the command's exit code and is
+  exercised against success and failure cases.
+
+### Changed
+
+- Skill 0.2.0 pins build numbers throughout diagnosis and queue handoff, defaults
+  to log snapshots, bounds agent monitoring, and explains evidence, redaction
+  and reuse of the user's existing write authorization.
+- CLI help, README and site examples now use exact runs and explain per-request
+  log timeouts. Contributor guidance removes obsolete OpenObserve write rules.
+
 ## [0.6.2] - 2026-08-12
 
 ### Added
@@ -217,7 +240,8 @@ workflow.
   release binaries and `make install`. A generated CLI reference (`docs/cli/`)
   and a GitHub Pages landing page.
 
-[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.6.2...HEAD
+[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/AngelMsger/jenkins-cli/compare/v0.6.2...v0.7.0
 [0.6.2]: https://github.com/AngelMsger/jenkins-cli/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/AngelMsger/jenkins-cli/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/AngelMsger/jenkins-cli/compare/v0.5.0...v0.6.0

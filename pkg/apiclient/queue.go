@@ -10,22 +10,24 @@ import (
 )
 
 type rawQueueItem struct {
-	ID           int    `json:"id"`
-	Why          string `json:"why"`
-	Blocked      bool   `json:"blocked"`
-	Buildable    bool   `json:"buildable"`
-	Stuck        bool   `json:"stuck"`
-	Pending      bool   `json:"pending"`
-	InQueueSince int64  `json:"inQueueSince"`
-	Params       string `json:"params"`
-	URL          string `json:"url"`
+	ID           int       `json:"id"`
+	Why          string    `json:"why"`
+	Blocked      bool      `json:"blocked"`
+	Buildable    bool      `json:"buildable"`
+	Stuck        bool      `json:"stuck"`
+	Pending      bool      `json:"pending"`
+	Cancelled    bool      `json:"cancelled"`
+	Executable   *BuildRef `json:"executable"`
+	InQueueSince int64     `json:"inQueueSince"`
+	Params       string    `json:"params"`
+	URL          string    `json:"url"`
 	Task         struct {
 		Name string `json:"name"`
 		URL  string `json:"url"`
 	} `json:"task"`
 }
 
-const queueItemTree = "id,why,blocked,buildable,stuck,pending,inQueueSince,params,url,task[name,url]"
+const queueItemTree = "id,why,blocked,buildable,stuck,pending,cancelled,inQueueSince,params,url,task[name,url],executable[number,url]"
 
 // ListQueue returns the build queue (pending / blocked builds).
 func (c *apiClient) ListQueue(ctx context.Context) ([]QueueItem, error) {
@@ -56,15 +58,17 @@ func (c *apiClient) GetQueueItem(ctx context.Context, id int) (*QueueItem, error
 
 func toQueueItem(r rawQueueItem) QueueItem {
 	it := QueueItem{
-		ID:        r.ID,
-		Why:       r.Why,
-		Task:      r.Task.Name,
-		URL:       r.Task.URL,
-		Blocked:   r.Blocked,
-		Buildable: r.Buildable,
-		Stuck:     r.Stuck,
-		Pending:   r.Pending,
-		Params:    r.Params,
+		ID:         r.ID,
+		Why:        r.Why,
+		Task:       r.Task.Name,
+		URL:        r.Task.URL,
+		Blocked:    r.Blocked,
+		Buildable:  r.Buildable,
+		Stuck:      r.Stuck,
+		Pending:    r.Pending,
+		Cancelled:  r.Cancelled,
+		Executable: r.Executable,
+		Params:     r.Params,
 	}
 	if r.InQueueSince > 0 {
 		it.InQueueSince = timeutil.FromMillis(r.InQueueSince).Format(time.RFC3339)

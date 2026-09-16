@@ -40,12 +40,19 @@ present) tells you whether a retry in the same environment could help
 Scripted use:
 
 ```bash
-if ! jenkins-cli build get my-app lastBuild >/tmp/build.json; then
-  case $? in
-    3|4) echo "fix auth/config" ;;
-    6)   echo "job/build missing — run: jenkins-cli job list" ;;
-    7|8|9) echo "transient — retry later" ;;
+build_file=$(mktemp)
+trap 'rm -f "$build_file"' EXIT
+if jenkins-cli build get my-app lastBuild >"$build_file"; then
+  cat "$build_file"
+else
+  code=$?
+  case "$code" in
+    3|4) printf '%s\n' 'Inspect the structured auth/config recovery steps.' >&2 ;;
+    6) printf '%s\n' 'Verify the selected job and build.' >&2 ;;
+    7|8|9) printf '%s\n' 'Transient read failure; retry within a bounded budget.' >&2 ;;
+    *) printf 'Command failed with exit %s.\n' "$code" >&2 ;;
   esac
+  exit "$code"
 fi
 ```
 
@@ -57,9 +64,9 @@ fi
   Only configure credentials when the host retry also reports them missing.
 - **`NO_BASE_URL` (config/3)** — no server configured. Run `config init` or set
   `JENKINS_URL`.
-- **`AUTH_LOGIN_NEEDS_TTY` (auth/4)** — `auth login` / `config init` need a
-  terminal. In CI / agents set `JENKINS_USER` + `JENKINS_TOKEN` (or
-  `JENKINS_PASSWORD`).
+- **`AUTH_LOGIN_NEEDS_TTY` (auth/4)** — `auth login` needs a terminal; plain
+  `config init` also supports piped input. In CI / agents set `JENKINS_USER` +
+  `JENKINS_TOKEN` (or `JENKINS_PASSWORD`).
 - **`HTTP_UNAUTHORIZED` (auth/4)** — Jenkins rejected the credentials. Use your
   Jenkins **username + API token** (User → Configure → API Token), not your web
   password. Re-run `config init`.
@@ -69,11 +76,13 @@ fi
   Manage Jenkins → Security.
 - **`HTTP_NOT_FOUND` (not_found/6)** — no job or build at that path. Paths are
   `folder/job[/branch]` and case-sensitive; run `job list` / `build list`.
-- **`NOT_PIPELINE` (not_found/6)** — `build stages` only works for Pipeline /
-  multibranch jobs. For a freestyle job use `build log` and `build tests`.
-- **`NO_TEST_REPORT` (not_found/6)** — the build published no test results.
-  Check `build log` for the failure.
+- **`NOT_PIPELINE` (not_found/6)** — the stages endpoint returned 404. Verify
+  the same numeric build exists and inspect `job get` for the job kind before
+  deciding stage reporting is unavailable. Use that build's console next.
+- **`NO_TEST_REPORT` (not_found/6)** — the test-report endpoint returned 404.
+  Verify the same build and read its console; this does not prove tests ran
+  or passed.
 - **`READONLY_BLOCKED` (permission/5)** — a write (`job build`, `build stop`,
   `queue cancel`) was blocked because the session is read-only. Preview with
-  `--dry-run`, or re-run with `--allow-writes`.
+  `--dry-run`; use `--allow-writes` only for a write the user authorized.
 - **`BAD_PARAM` (usage/2)** — `--param` must be `KEY=VALUE`.

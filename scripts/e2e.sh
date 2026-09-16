@@ -38,6 +38,8 @@ done
 export JENKINS_URL="$URL"
 export JENKINS_USER="alice"
 export JENKINS_TOKEN="tok"
+export JENKINS_CLI_NO_UPDATE_NOTIFIER=1
+export JENKINS_CLI_SKILL=1
 
 run() { "$BIN" --config "$TMP" "$@"; }
 
@@ -62,12 +64,15 @@ check "build list"      '"number": 7'          -- run build list app
 check "build get"       '"result": "FAILURE"'  -- run build get app lastFailed
 check "build get cause" '"user_id": "alice"'   -- run build get app lastFailed
 check "build log"       'FAIL: TestThing'      -- run build log app lastFailed
-check "build log follow" 'Build step failed'   -- run build log app --follow
+check "build log follow" 'Build step failed'   -- run build log app 7 --follow
 check "build stages"    '"name": "Test"'       -- run build stages app lastFailed
 check "build tests"     '"TestThing"'          -- run build tests app lastFailed --failed-only
 check "build changes"   '"break the test"'     -- run build changes app lastFailed
 check "build artifacts" 'app.jar'              -- run build artifacts app lastFailed
 check "queue list"      '"id": 51'             -- run queue list
+check "queue assigned build" '"number": 8'    -- run queue get 77
+check "queue build URL" 'http://x/job/app/8/'  -- run queue get 77
+check "queue cancellation" '"cancelled": true' -- run queue get 78
 check "doctor healthy"  '"healthy": true'      -- run doctor --no-update-check
 check "auth status"     '"authenticated": true' -- run auth status
 

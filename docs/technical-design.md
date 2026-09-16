@@ -47,7 +47,9 @@ Each noun lives in its own file (`job.go`, `build.go`, `queue.go`, `auth.go`,
 `config.go`, `doctor.go`, `skill.go`), organised `<noun> <verb>`. `build_log.go`
 hosts `build log`, including the `--follow` loop that streams the progressive
 console (using the `X-More-Data` / `X-Text-Size` headers) until the build
-finishes, with SIGINT/SIGTERM handling. The three write commands (`job build`,
+finishes, with SIGINT/SIGTERM handling. Its timeout is per request; agents use
+a host-side deadline and pin the numeric build before following or resuming.
+The three write commands (`job build`,
 `build stop`, `queue cancel`) build a `--dry-run` preview from a pure
 `apiclient.*Plan` function and otherwise call the mutating client method.
 
@@ -76,6 +78,12 @@ implementation. One file per resource: `jobs.go`, `builds.go`, `console.go`,
 
 Read methods shape their responses with Jenkins' `?tree=` parameter so the
 default output stays a compact, high-signal map rather than a full object dump.
+Queue items preserve the job `url` and add `cancelled` plus an optional
+`executable` using the existing `BuildRef` number/URL shape. Trigger-to-build
+handoff follows that executable, never the moving latest-build selector.
+Missing stage/test endpoints retain their existing error codes, describe
+unavailable evidence without inferring job type or test outcomes, and keep the
+requested job/build in their recovery steps.
 
 ## Transport (`pkg/transport`)
 
@@ -162,4 +170,6 @@ from `--help`; CI fails if the committed output is stale.
   decoders, the dry-run plan builders, and the read-only blocks).
 - `scripts/e2e.sh` runs the built binary against `test/mockserver` and asserts
   the agent-facing contract (JSON output, structured errors, exit codes) with no
-  real credentials.
+  real credentials. Queue lifecycle tests cover waiting, assigned and cancelled
+  items; the embedded shell error-handling example is executed against stubbed
+  exit codes so its recovery behavior stays correct.
