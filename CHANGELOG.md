@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-09-16
+
+### Fixed
+
+- Make the companion-Skill doctor test use both Unix `HOME` and Windows
+  `USERPROFILE`, so native Windows CI validates version alignment against the
+  isolated test home instead of the runner account.
+
 ## [0.8.0] - 2026-09-16
 
 ### Added
@@ -259,7 +267,8 @@ workflow.
   release binaries and `make install`. A generated CLI reference (`docs/cli/`)
   and a GitHub Pages landing page.
 
-[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/AngelMsger/jenkins-cli/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/AngelMsger/jenkins-cli/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/AngelMsger/jenkins-cli/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/AngelMsger/jenkins-cli/compare/v0.6.2...v0.7.0
