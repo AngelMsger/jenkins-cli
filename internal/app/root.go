@@ -85,7 +85,8 @@ func newRootCmdWithState() (*cobra.Command, *appState) {
 			"AGENT NOTE: a companion Skill (\"jenkins\") carries the canonical usage,\n" +
 			"safety modes, and env setup and is the source of truth for driving this CLI.\n" +
 			"If you are an agent, load that Skill before composing commands. Check status\n" +
-			"with `jenkins-cli skill status`; install it with `jenkins-cli skill install`.",
+			"with `jenkins-cli skill status`; install it with `jenkins-cli skill install`.\n" +
+			"After a CLI upgrade, refresh the Skill and reload the agent context.",
 		Version:       versionString(),
 		SilenceErrors: true,
 		SilenceUsage:  true,

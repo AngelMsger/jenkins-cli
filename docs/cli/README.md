@@ -67,9 +67,9 @@ is published at <https://angelmsger.github.io/jenkins-cli/cli/>.
 | --- | --- |
 | [`jenkins-cli skill`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-skill) | Install the companion Skill for coding agents |
 | [`jenkins-cli skill install`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-skill-install) | Deploy the embedded Skill into a coding agent's skills directory |
-| [`jenkins-cli skill path`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-skill-path) | Print where the Skill would be installed, and whether it is |
+| [`jenkins-cli skill path`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-skill-path) | Print Skill paths, installation state and version alignment |
 | [`jenkins-cli skill show`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-skill-show) | Print the embedded SKILL.md to stdout |
-| [`jenkins-cli skill status`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-skill-status) | Report whether the companion Skill is loaded and installed |
+| [`jenkins-cli skill status`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-skill-status) | Report loaded, installed and embedded Skill versions |
 | [`jenkins-cli skill uninstall`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-skill-uninstall) | Remove the companion Skill from a coding agent's skills directory |
 
 ## version

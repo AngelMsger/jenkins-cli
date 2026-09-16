@@ -30,6 +30,10 @@ func main() {
 }
 
 func route(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == "/releases/latest" {
+		writeJSON(w, map[string]any{"tag_name": "v99.0.0", "html_url": "https://example/releases"})
+		return
+	}
 	if !requireAuth(w, r) {
 		return
 	}

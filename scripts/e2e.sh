@@ -38,8 +38,9 @@ done
 export JENKINS_URL="$URL"
 export JENKINS_USER="alice"
 export JENKINS_TOKEN="tok"
+export JENKINS_RELEASE_API="$URL/releases/latest"
 export JENKINS_CLI_NO_UPDATE_NOTIFIER=1
-export JENKINS_CLI_SKILL=1
+export JENKINS_CLI_SKILL=0.2.1
 
 run() { "$BIN" --config "$TMP" "$@"; }
 
@@ -74,7 +75,31 @@ check "queue assigned build" '"number": 8'    -- run queue get 77
 check "queue build URL" 'http://x/job/app/8/'  -- run queue get 77
 check "queue cancellation" '"cancelled": true' -- run queue get 78
 check "doctor healthy"  '"healthy": true'      -- run doctor --no-update-check
+check "doctor reports Skill" '"companion-skill"' -- run doctor --no-update-check
 check "auth status"     '"authenticated": true' -- run auth status
+
+SKILL_HOME="$TMP/skill-home"
+mkdir -p "$SKILL_HOME"
+check "skill install for Codex" '"alignment": "current"' -- \
+  env HOME="$SKILL_HOME" "$BIN" --config "$TMP" skill install --agent codex
+check "skill status version aligned" '"loaded_status": "current"' -- \
+  env HOME="$SKILL_HOME" JENKINS_CLI_SKILL=0.2.1 "$BIN" --config "$TMP" skill status
+legacy_out="$(env HOME="$SKILL_HOME" JENKINS_CLI_SKILL=1 JENKINS_CLI_NO_UPDATE_NOTIFIER=1 \
+  "$BIN" --config "$TMP" job list 2>&1 || true)"
+if grep -q '"status":"unknown"' <<<"$legacy_out"; then
+  echo "ok   - legacy Skill handshake is detected"
+  pass=$((pass + 1))
+else
+  echo "FAIL - legacy Skill handshake is detected"; exit 1
+fi
+update_out="$(env -u JENKINS_CLI_NO_UPDATE_NOTIFIER JENKINS_CLI_SKILL=0.2.1 \
+  "$BIN" --config "$TMP" job list 2>&1 || true)"
+if grep -q '"next_steps"' <<<"$update_out" && grep -q 'jenkins-cli skill install' <<<"$update_out"; then
+  echo "ok   - update notice includes Skill refresh"
+  pass=$((pass + 1))
+else
+  echo "FAIL - update notice includes Skill refresh"; exit 1
+fi
 
 # Writes: --dry-run previews without sending; read-only blocks the real write.
 check "job build dry-run" '"dry_run": true'     -- run job build app --param BRANCH=main --dry-run

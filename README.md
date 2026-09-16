@@ -99,10 +99,11 @@ installed agents and installs into each one found:
 ```bash
 jenkins-cli skill install            # auto-detect; install for each agent found
 jenkins-cli skill install --agent codex
+jenkins-cli skill status             # compare loaded, installed, embedded versions
 jenkins-cli skill uninstall          # remove it again
 ```
 
-Re-run it after upgrading the CLI to keep the Skill version-matched.
+After upgrading the CLI, re-run `skill install` and reload the agent context.
 
 ### 3. Enable shell completion (optional)
 

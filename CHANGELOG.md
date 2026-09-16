@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-16
+
+### Added
+
+- Close the CLI/Skill upgrade loop: update notices provide ordered CLI upgrade,
+  Skill refresh and agent-reload steps; versioned handshakes detect stale or
+  legacy loaded Skills; `skill status` compares loaded, installed and embedded
+  versions; and `doctor` reports companion-Skill state without changing its
+  connectivity verdict. npm setup text now treats Skill refresh as an explicit
+  post-install/post-upgrade step. Skill bumped to `0.2.1`.
+
 ## [0.7.1] - 2026-09-16
 
 ### Fixed
@@ -248,7 +259,8 @@ workflow.
   release binaries and `make install`. A generated CLI reference (`docs/cli/`)
   and a GitHub Pages landing page.
 
-[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/AngelMsger/jenkins-cli/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/AngelMsger/jenkins-cli/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/AngelMsger/jenkins-cli/compare/v0.6.2...v0.7.0
 [0.6.2]: https://github.com/AngelMsger/jenkins-cli/compare/v0.6.1...v0.6.2

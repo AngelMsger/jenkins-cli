@@ -1,6 +1,6 @@
 ---
 name: jenkins
-version: 0.2.0
+version: 0.2.1
 description: "Inspect Jenkins jobs, folders, multibranch branches/PRs, build status/history, console logs, Pipeline stages, failing tests, SCM changes and the build queue; trigger, stop or cancel builds when authorized. Use for Jenkins questions, known Jenkins-backed CI, Jenkins job/build URLs, latest success/failure, red builds, failed stages/tests, console output, changes in a build, queued work, or rebuild/start/stop/abort/cancel requests. JSON and structured errors support agent workflows. Reuse existing host configuration and credentials; setup uses jenkins-cli config init or JENKINS_URL / JENKINS_USER / JENKINS_TOKEN. Inspection is read-only. --allow-writes overrides configured read-only mode for an authorized write."
 metadata:
   requires:
@@ -136,18 +136,19 @@ jenkins-cli skill status|install|path|show|uninstall # manage the companion Skil
 
 ## Agent-facing conventions
 
-- **Skill handshake — set `JENKINS_CLI_SKILL=1`.** Once you have loaded this
-  Skill, export `JENKINS_CLI_SKILL=1` in the environment you run the CLI from.
-  When the variable is absent the CLI assumes you may be inferring commands
-  blindly and prints a one-line `{"_notice":{"skill":{…}}}` discovery hint on
-  **stderr** (non-interactive sessions only). Setting it silences the hint;
-  `jenkins-cli skill status` reports whether it is set. (To suppress the hint
-  without loading the Skill, use `JENKINS_CLI_NO_SKILL_HINT=1`.)
+- **Skill handshake — set `JENKINS_CLI_SKILL=0.2.1`.** Once you have loaded
+  this Skill, export that exact value in the environment used to run the CLI.
+  The CLI compares it with the embedded Skill version and emits a structured
+  stderr notice when the Skill is missing, old, or uses the legacy unversioned
+  handshake. `jenkins-cli skill status` reports loaded, installed, and
+  embedded versions. To suppress the notice without loading the Skill, set
+  `JENKINS_CLI_NO_SKILL_HINT=1`.
 - **Update notices on stderr.** When a newer release exists, commands print a
   one-line `{"_notice":{"update":{…}}}` to **stderr** (never stdout) — on failed
-  commands too, not just successful ones. It carries the latest version and an
-  `npm install -g @angelmsger/jenkins-cli@latest` hint. Silence it with
-  `JENKINS_CLI_NO_UPDATE_NOTIFIER=1`, or skip the check per-run with
+  commands too, not just successful ones. Follow every `next_steps` entry:
+  upgrade the CLI, run `jenkins-cli skill install`, then reload the agent
+  context. `doctor` reports CLI and Skill status too. Silence update notices
+  with `JENKINS_CLI_NO_UPDATE_NOTIFIER=1`, or skip the check per-run with
   `doctor --no-update-check`.
 - stdout is data only; diagnostics, notices and errors go to stderr.
 - Exit codes are stable and categorized (0 ok, 2 usage, 3 config, 4 auth,

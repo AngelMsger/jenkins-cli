@@ -19,6 +19,11 @@ test('rejects unsupported Windows architectures', () => {
   assert.throws(() => assetName('win32', 'ia32'), /unsupported platform win32\/ia32/);
 });
 
+test('welcome text explains Skill refresh', () => {
+  assert.match(welcomeText(), /jenkins-cli skill install/);
+  assert.match(welcomeText(), /reload your agent context/);
+});
+
 test('welcome text recommends Jenkins commands', () => {
   assert.match(welcomeText(), /jenkins-cli job list/);
   assert.match(welcomeText(), /jenkins-cli build list/);
