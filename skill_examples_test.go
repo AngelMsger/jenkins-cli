@@ -18,7 +18,23 @@ func TestSkillErrorHandlingExample(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	blocks := strings.Split(string(data), "```bash\n")
+	lf := strings.ReplaceAll(string(data), "\r\n", "\n")
+	for _, tc := range []struct {
+		name, newline string
+	}{
+		{"LF", "\n"},
+		{"CRLF", "\r\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			testSkillErrorHandlingExample(t, bash, strings.ReplaceAll(lf, "\n", tc.newline))
+		})
+	}
+}
+
+func testSkillErrorHandlingExample(t *testing.T, bash, markdown string) {
+	t.Helper()
+	markdown = strings.ReplaceAll(markdown, "\r\n", "\n")
+	blocks := strings.Split(markdown, "```bash\n")
 	if len(blocks) != 2 {
 		t.Fatalf("expected one executable bash example, got %d", len(blocks)-1)
 	}

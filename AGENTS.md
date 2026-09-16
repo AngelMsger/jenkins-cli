@@ -77,4 +77,6 @@ numeric build across stages, tests, logs and changes. Queue handoff uses
 Keep unavailable-report errors neutral and preserve the selected run in recovery
 steps. Agent monitoring needs an overall host deadline and output budget;
 `--timeout` bounds individual requests. Execute shell recovery examples against
-stubbed exit codes in tests, rather than asserting policy prose.
+stubbed exit codes in tests, rather than asserting policy prose. Normalize
+checkout line endings before extracting/executing examples and exercise both
+LF and CRLF inputs.

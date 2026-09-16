@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-09-16
+
+### Fixed
+
+- The executable Skill example test normalizes checkout line endings before
+  Bash fence extraction and execution, fixing Windows CI with CRLF files. It is
+  now exercised with both LF and CRLF inputs; Skill 0.2.0 is unchanged.
+
 ## [0.7.0] - 2026-09-16
 
 ### Added
@@ -240,7 +248,8 @@ workflow.
   release binaries and `make install`. A generated CLI reference (`docs/cli/`)
   and a GitHub Pages landing page.
 
-[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/AngelMsger/jenkins-cli/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/AngelMsger/jenkins-cli/compare/v0.6.2...v0.7.0
 [0.6.2]: https://github.com/AngelMsger/jenkins-cli/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/AngelMsger/jenkins-cli/compare/v0.6.0...v0.6.1
