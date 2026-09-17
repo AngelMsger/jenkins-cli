@@ -82,3 +82,5 @@ to assert a read-only session: the write commands (`job build`, `build stop`,
 `queue cancel`) are then blocked before any request is sent. `--allow-writes` is
 the per-call escape hatch, and `--dry-run` previews a write without sending it
 even in read-only mode.
+
+For preset team services, use `config set-context` and `auth guide` before personal login; see [team setup](team-setup.md).

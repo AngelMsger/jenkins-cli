@@ -3,7 +3,9 @@ package app
 import (
 	"errors"
 	"fmt"
+	"github.com/angelmsger/jenkins-cli/internal/config"
 	"os"
+	"strings"
 
 	"github.com/angelmsger/jenkins-cli/internal/auth"
 	"github.com/angelmsger/jenkins-cli/pkg/constants"
@@ -13,10 +15,11 @@ import (
 // initValues are the inputs collected by the config-init flow, whether through
 // the interactive TUI (--pretty) or plain line prompts.
 type initValues struct {
-	baseURL  string
-	scheme   string
-	username string
-	secret   string // API token (token) or password (basic)
+	credentialURL string
+	baseURL       string
+	scheme        string
+	username      string
+	secret        string // API token (token) or password (basic)
 }
 
 // withDefaults seeds empty fields with sensible defaults so the wizard shows
@@ -36,7 +39,7 @@ func (v initValues) withDefaults() initValues {
 // command's JSON result on stdout stays a clean data channel.
 func runInitForm(def initValues) (initValues, error) {
 	v := def.withDefaults()
-	form := huh.NewForm(
+	serviceForm := huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().
 				Title("Server URL").
@@ -55,10 +58,19 @@ func runInitForm(def initValues) (initValues, error) {
 				).
 				Value(&v.scheme),
 		),
+	).WithInput(os.Stdin).WithOutput(os.Stderr)
+	if err := serviceForm.Run(); err != nil {
+		return v, err
+	}
+	guidance, err := wizardGuide(v)
+	if err != nil {
+		return v, err
+	}
+	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().
 				Title("API token").
-				Description("User → Configure → API Token in Jenkins").
+				Description(strings.Join(guidance.Lines(), "\n")).
 				EchoMode(huh.EchoModePassword).
 				Value(&v.secret).
 				Validate(required),
@@ -66,6 +78,7 @@ func runInitForm(def initValues) (initValues, error) {
 		huh.NewGroup(
 			huh.NewInput().
 				Title("Password").
+				Description(strings.Join(guidance.Lines(), "\n")).
 				EchoMode(huh.EchoModePassword).
 				Value(&v.secret).
 				Validate(required),
@@ -94,6 +107,13 @@ func runInitPrompts(def initValues) (initValues, error) {
 	}
 	if v.scheme, err = promptLine("Auth scheme (token/basic)", v.scheme); err != nil {
 		return v, err
+	}
+	if g, e := wizardGuide(v); e != nil {
+		return v, e
+	} else {
+		for _, line := range g.Lines() {
+			fmt.Fprintln(os.Stderr, line)
+		}
 	}
 	label := "API token"
 	if v.scheme == auth.SchemeBasic {
@@ -146,4 +166,8 @@ func formInput(title, placeholder string) (string, error) {
 		return "", err
 	}
 	return val, nil
+}
+
+func wizardGuide(v initValues) (config.AuthGuide, error) {
+	return config.Guide(config.Config{BaseURL: v.baseURL, Auth: config.AuthConfig{Scheme: v.scheme, CredentialURL: v.credentialURL}}, nil)
 }

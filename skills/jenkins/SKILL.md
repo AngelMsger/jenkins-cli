@@ -1,6 +1,6 @@
 ---
 name: jenkins
-version: 0.2.1
+version: 0.2.2
 description: "Inspect Jenkins jobs, folders, multibranch branches/PRs, build status/history, console logs, Pipeline stages, failing tests, SCM changes and the build queue; trigger, stop or cancel builds when authorized. Use for Jenkins questions, known Jenkins-backed CI, Jenkins job/build URLs, latest success/failure, red builds, failed stages/tests, console output, changes in a build, queued work, or rebuild/start/stop/abort/cancel requests. JSON and structured errors support agent workflows. Reuse existing host configuration and credentials; setup uses jenkins-cli config init or JENKINS_URL / JENKINS_USER / JENKINS_TOKEN. Inspection is read-only. --allow-writes overrides configured read-only mode for an authorized write."
 metadata:
   requires:
@@ -136,7 +136,7 @@ jenkins-cli skill status|install|path|show|uninstall # manage the companion Skil
 
 ## Agent-facing conventions
 
-- **Skill handshake — set `JENKINS_CLI_SKILL=0.2.1`.** Once you have loaded
+- **Skill handshake — set `JENKINS_CLI_SKILL=0.2.2`.** Once you have loaded
   this Skill, export that exact value in the environment used to run the CLI.
   The CLI compares it with the embedded Skill version and emits a structured
   stderr notice when the Skill is missing, old, or uses the legacy unversioned
@@ -158,3 +158,25 @@ jenkins-cli skill status|install|path|show|uninstall # manage the companion Skil
 - `--fields a,b.c` projects output to just those dot-paths to save tokens.
 - `build log` prints raw console text; ordinary inspection results use JSON by
   default. Help, version and Skill-source commands have their own text output.
+
+## Team service presets and authentication
+
+- Inspect existing configuration and reuse it. `config set-context <name>` is the
+  offline installer entrypoint; it accepts `--base-url`, `--auth-scheme`,
+  `--credential-url`, `--activate`, `--overwrite`, and `--dry-run`.
+- `JENKINS_AUTH_SCHEME` and `JENKINS_CREDENTIAL_URL` complement the existing
+  service variables. Presets never copy a personal username or secret from the
+  environment. Conflicts preserve existing values unless explicitly overwritten.
+- Run `auth guide` to obtain the current instance's credential page, its source,
+  navigation steps, and limitations. Links are hints, not evidence of server
+  capabilities. Follow the returned product-specific instructions; do not invent
+  a token URL or assume ingestion credentials authorize queries.
+- Once a service is preset, direct the member to `auth login` in their terminal
+  to save their verified personal identity and secret. Do not ask for secrets in
+  chat. In non-interactive environments use transient credential variables.
+- Preserve host-keychain recovery for inaccessible credentials. A server/context
+  mismatch requires selecting or creating a matching context; a partial login
+  write error identifies what was stored and provides recovery steps.
+
+See [team setup](references/team-setup.md) for the output fields, conflict
+semantics, credential URL overrides, and failure recovery.

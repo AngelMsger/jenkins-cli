@@ -58,8 +58,9 @@ type Config struct {
 // AuthConfig holds non-secret auth settings. Username is the Jenkins login the
 // API token (or password) belongs to.
 type AuthConfig struct {
-	Scheme   string `yaml:"scheme"`
-	Username string `yaml:"username,omitempty"`
+	CredentialURL string `yaml:"credential_url,omitempty"`
+	Scheme        string `yaml:"scheme"`
+	Username      string `yaml:"username,omitempty"`
 }
 
 // Defaults holds tunable runtime defaults.
@@ -110,13 +111,14 @@ func (r *Resolved) ContextSelectedExplicitly() bool {
 
 // Field keys used for layer maps and provenance tracking.
 const (
-	fieldServer       = "server"
-	fieldAuthScheme   = "auth.scheme"
-	fieldAuthUsername = "auth.username"
-	fieldFormat       = "defaults.format"
-	fieldTimeout      = "defaults.timeout"
-	fieldMaxRetries   = "defaults.max_retries"
-	fieldReadOnly     = "defaults.read_only"
+	fieldCredentialURL = "auth.credential_url"
+	fieldServer        = "server"
+	fieldAuthScheme    = "auth.scheme"
+	fieldAuthUsername  = "auth.username"
+	fieldFormat        = "defaults.format"
+	fieldTimeout       = "defaults.timeout"
+	fieldMaxRetries    = "defaults.max_retries"
+	fieldReadOnly      = "defaults.read_only"
 	// Secret field keys (never persisted to the YAML file).
 	fieldPassword = "secret.password"
 	fieldToken    = "secret.token"
@@ -124,13 +126,14 @@ const (
 
 // Field key accessors for callers outside this package (e.g. config show).
 const (
-	FieldServer     = fieldServer
-	FieldAuthScheme = fieldAuthScheme
-	FieldAuthUser   = fieldAuthUsername
-	FieldFormat     = fieldFormat
-	FieldTimeout    = fieldTimeout
-	FieldMaxRetries = fieldMaxRetries
-	FieldReadOnly   = fieldReadOnly
+	FieldServer        = fieldServer
+	FieldCredentialURL = fieldCredentialURL
+	FieldAuthScheme    = fieldAuthScheme
+	FieldAuthUser      = fieldAuthUsername
+	FieldFormat        = fieldFormat
+	FieldTimeout       = fieldTimeout
+	FieldMaxRetries    = fieldMaxRetries
+	FieldReadOnly      = fieldReadOnly
 )
 
 // defaultLayer returns the built-in defaults as a layer map.
@@ -148,8 +151,9 @@ func configFromMap(m map[string]string) Config {
 	return Config{
 		BaseURL: m[fieldServer],
 		Auth: AuthConfig{
-			Scheme:   m[fieldAuthScheme],
-			Username: m[fieldAuthUsername],
+			CredentialURL: m[fieldCredentialURL],
+			Scheme:        m[fieldAuthScheme],
+			Username:      m[fieldAuthUsername],
 		},
 		Defaults: Defaults{
 			Format:     m[fieldFormat],

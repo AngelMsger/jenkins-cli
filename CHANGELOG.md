@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-09-17
+
+### Added
+
+- Add offline `config set-context` with target-specific presets, explicit conflict
+  handling, activation, and dry-run; add `--auth-scheme`, `--credential-url`, and
+  matching environment variables.
+- Add `auth guide` with display-only credential pages, navigation fallbacks, and
+  product-aware guidance shared by login, setup wizards, and missing credentials.
+
+### Fixed
+
+- Persist the personal username and authentication scheme after login; verify
+  authentication and reject a mismatched service before storing credentials.
+- Preserve credential-page metadata and replace configuration files atomically.
+
+
 ## [0.8.2] - 2026-09-16
 
 ### Fixed
@@ -274,7 +291,9 @@ workflow.
   release binaries and `make install`. A generated CLI reference (`docs/cli/`)
   and a GitHub Pages landing page.
 
-[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.8.1...HEAD
+[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/AngelMsger/jenkins-cli/compare/v0.8.2...v0.9.0
+[0.8.2]: https://github.com/AngelMsger/jenkins-cli/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/AngelMsger/jenkins-cli/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/AngelMsger/jenkins-cli/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/AngelMsger/jenkins-cli/compare/v0.7.0...v0.7.1

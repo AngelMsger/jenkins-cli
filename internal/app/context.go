@@ -19,13 +19,16 @@ import (
 
 // globalFlags holds the persistent flags shared by every command.
 type globalFlags struct {
-	baseURL    string
-	format     string
-	fields     string
-	timeout    string
-	configPath string
-	useContext string
-	verbose    bool
+	authScheme    string
+	credentialURL string
+	setupContext  string
+	baseURL       string
+	format        string
+	fields        string
+	timeout       string
+	configPath    string
+	useContext    string
+	verbose       bool
 	// pretty opts a human user into TUI prompts (in `config init`) and
 	// ANSI-colored JSON. Off by default so agent / scripted / pipe usage stays
 	// byte-identical.
@@ -56,11 +59,14 @@ func (s *appState) load() error {
 	}
 	resolved, err := config.Load(config.LoadOptions{
 		ConfigDir: cfgDir,
-		Context:   s.gflags.useContext,
+		Context:   s.loadContext(),
+		Setup:     s.gflags.setupContext != "",
 		Flags: config.FlagValues{
-			BaseURL: s.gflags.baseURL,
-			Format:  s.gflags.format,
-			Timeout: s.gflags.timeout,
+			BaseURL:       s.gflags.baseURL,
+			AuthScheme:    s.gflags.authScheme,
+			CredentialURL: s.gflags.credentialURL,
+			Format:        s.gflags.format,
+			Timeout:       s.gflags.timeout,
 		},
 	})
 	if err != nil {
@@ -194,4 +200,12 @@ func cmdContext(s *appState) (context.Context, context.CancelFunc) {
 type pageInfo struct {
 	Next    string
 	HasMore bool
+}
+
+// loadContext separates a setup destination from the active runtime context.
+func (s *appState) loadContext() string {
+	if s.gflags.setupContext != "" {
+		return strings.TrimSpace(s.gflags.setupContext)
+	}
+	return s.gflags.useContext
 }

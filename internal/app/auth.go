@@ -1,10 +1,7 @@
 package app
 
 import (
-	"context"
-
 	"github.com/angelmsger/jenkins-cli/internal/auth"
-	"github.com/angelmsger/jenkins-cli/pkg/apiclient"
 	cerrors "github.com/angelmsger/jenkins-cli/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -14,7 +11,7 @@ func newAuthCmd(s *appState) *cobra.Command {
 		Use:   "auth",
 		Short: "Log in, check identity and log out",
 	}
-	cmd.AddCommand(newAuthLoginCmd(s), newAuthStatusCmd(s), newAuthLogoutCmd(s))
+	cmd.AddCommand(newAuthGuideCmd(s), newAuthLoginCmd(s), newAuthStatusCmd(s), newAuthLogoutCmd(s))
 	return cmd
 }
 
@@ -46,6 +43,12 @@ func newAuthLoginCmd(s *appState) *cobra.Command {
 				scheme = auth.SchemeToken
 			}
 			cred := auth.Credential{Scheme: scheme, Username: cfg.Auth.Username}
+			if _, _, err := loginFile(s, cfg, cred); err != nil {
+				return err
+			}
+			if err := printAuthGuide(cfg); err != nil {
+				return err
+			}
 			if cred.Username == "" {
 				u, err := promptLine("Username", "")
 				if err != nil {
@@ -63,7 +66,7 @@ func newAuthLoginCmd(s *appState) *cobra.Command {
 			}
 			cred.Secret = secret
 
-			backend, err := verifyAndSave(s, cfg.BaseURL, cred)
+			backend, err := completeLogin(s, cfg, cred, s.loginServices())
 			if err != nil {
 				return err
 			}
@@ -144,21 +147,10 @@ func newAuthLogoutCmd(s *appState) *cobra.Command {
 // verifyAndSave builds a client from cred, pings the server to confirm the
 // credential works, then persists the secret. It returns the storage backend.
 func verifyAndSave(s *appState, baseURL string, cred auth.Credential) (string, error) {
-	if err := cred.Validate(); err != nil {
-		return "", err
-	}
-	client, err := apiclient.BuildClient(apiclient.BuildParams{
-		BaseURL:       baseURL,
-		AuthDecorator: cred.Decorator(),
-		Timeout:       s.timeout(),
-		MaxRetries:    s.cfg().Defaults.MaxRetries,
-	})
-	if err != nil {
-		return "", err
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), s.timeout())
-	defer cancel()
-	if err := client.Ping(ctx); err != nil {
+	cfg := s.cfg()
+	cfg.BaseURL = baseURL
+
+	if err := verifyCredential(s, cfg, cred); err != nil {
 		return "", err
 	}
 	return auth.Save(baseURL, cred, s.store)

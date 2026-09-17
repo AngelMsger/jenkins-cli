@@ -9,6 +9,7 @@ is published at <https://angelmsger.github.io/jenkins-cli/cli/>.
 | Command | Description |
 | --- | --- |
 | [`jenkins-cli auth`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-auth) | Log in, check identity and log out |
+| [`jenkins-cli auth guide`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-auth-guide) | Show offline credential acquisition guidance for this service |
 | [`jenkins-cli auth login`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-auth-login) | Store credentials for the active context (interactive) |
 | [`jenkins-cli auth logout`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-auth-logout) | Remove the stored credential for the active context |
 | [`jenkins-cli auth status`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-auth-status) | Show the active identity and verify connectivity |
@@ -34,6 +35,7 @@ is published at <https://angelmsger.github.io/jenkins-cli/cli/>.
 | [`jenkins-cli config`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-config) | Set up and inspect configuration and contexts |
 | [`jenkins-cli config contexts`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-config-contexts) | List configured contexts and which one is current |
 | [`jenkins-cli config init`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-config-init) | Interactively configure a context and store credentials |
+| [`jenkins-cli config set-context`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-config-set-context) | Configure service presets without credentials or network access |
 | [`jenkins-cli config show`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-config-show) | Show the resolved configuration with field provenance |
 | [`jenkins-cli config use-context`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-config-use-context) | Set the current context |
 

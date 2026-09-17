@@ -27,6 +27,7 @@
     <div class="side-group">
       <div class="side-title">auth</div>
       <a href="#jenkins-cli-auth">jenkins-cli auth</a>
+      <a href="#jenkins-cli-auth-guide">jenkins-cli auth guide</a>
       <a href="#jenkins-cli-auth-login">jenkins-cli auth login</a>
       <a href="#jenkins-cli-auth-logout">jenkins-cli auth logout</a>
       <a href="#jenkins-cli-auth-status">jenkins-cli auth status</a>
@@ -48,6 +49,7 @@
       <a href="#jenkins-cli-config">jenkins-cli config</a>
       <a href="#jenkins-cli-config-contexts">jenkins-cli config contexts</a>
       <a href="#jenkins-cli-config-init">jenkins-cli config init</a>
+      <a href="#jenkins-cli-config-set-context">jenkins-cli config set-context</a>
       <a href="#jenkins-cli-config-show">jenkins-cli config show</a>
       <a href="#jenkins-cli-config-use-context">jenkins-cli config use-context</a>
       </div>
@@ -82,7 +84,7 @@
       <div class="side-title">version</div>
       <a href="#jenkins-cli-version">jenkins-cli version</a>
       </div>
-    
+
   </aside>
   <main class="cli-main">
     <span class="eyebrow">Reference</span>
@@ -106,8 +108,10 @@ After a CLI upgrade, refresh the Skill and reload the agent context.</p>
         <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
         <tbody>
         <tr><td><code>--allow-writes</code></td><td><code>false</code></td><td>override read-only mode (defaults.read_only / JENKINS_CLI_READ_ONLY) for this invocation</td></tr>
+        <tr><td><code>--auth-scheme</code></td><td></td><td>authentication scheme (overrides environment and config)</td></tr>
         <tr><td><code>--base-url</code></td><td></td><td>Jenkins server URL (overrides config), e.g. http://localhost:8080</td></tr>
         <tr><td><code>--config</code></td><td></td><td>config directory (default ~/.angelmsger/jenkins)</td></tr>
+        <tr><td><code>--credential-url</code></td><td></td><td>credential acquisition page URL (display only)</td></tr>
         <tr><td><code>--fields</code></td><td></td><td>comma-separated dot-path fields to keep</td></tr>
         <tr><td><code>--format, -f</code></td><td></td><td>output format: json, table or ndjson</td></tr>
         <tr><td><code>--pretty</code></td><td><code>false</code></td><td>human-friendly mode for interactive terminal use only (agents/scripts should omit): TUI in `config init`, colorized JSON elsewhere; errors without a TTY</td></tr>
@@ -118,16 +122,25 @@ After a CLI upgrade, refresh the Skill and reload the agent context.</p>
       </table>
     </section>
 
-    
+
     <section class="cmd" id="jenkins-cli-auth">
       <h2>jenkins-cli auth</h2>
       <p class="short">Log in, check identity and log out</p>
       <pre>jenkins-cli auth</pre>
-      
-      
-      
+
+
+
     </section>
-    
+
+    <section class="cmd" id="jenkins-cli-auth-guide">
+      <h2>jenkins-cli auth guide</h2>
+      <p class="short">Show offline credential acquisition guidance for this service</p>
+      <pre>jenkins-cli auth guide</pre>
+
+
+
+    </section>
+
     <section class="cmd" id="jenkins-cli-auth-login">
       <h2>jenkins-cli auth login</h2>
       <p class="short">Store credentials for the active context (interactive)</p>
@@ -136,28 +149,28 @@ After a CLI upgrade, refresh the Skill and reload the agent context.</p>
 them against the server, and stores the secret in the OS keychain.
 Requires an interactive terminal; in CI / agent sandboxes set
 JENKINS_USER &#43; JENKINS_TOKEN (or JENKINS_PASSWORD) instead.</p>
-      
-      
+
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-auth-logout">
       <h2>jenkins-cli auth logout</h2>
       <p class="short">Remove the stored credential for the active context</p>
       <pre>jenkins-cli auth logout</pre>
-      
-      
-      
+
+
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-auth-status">
       <h2>jenkins-cli auth status</h2>
       <p class="short">Show the active identity and verify connectivity</p>
       <pre>jenkins-cli auth status</pre>
-      
-      
-      
+
+
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-build">
       <h2>jenkins-cli build</h2>
       <p class="short">Inspect builds: status, logs, stages, tests, changes</p>
@@ -166,29 +179,29 @@ JENKINS_USER &#43; JENKINS_TOKEN (or JENKINS_PASSWORD) instead.</p>
 build&#39;s result, console log, pipeline stages, test failures or SCM
 changes. A build reference is a number or a permalink keyword: last,
 lastSuccessful, lastFailed, lastCompleted, lastStable (default: last).</p>
-      
-      
+
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-build-artifacts">
       <h2>jenkins-cli build artifacts</h2>
       <p class="short">List a build&#39;s archived artifacts</p>
       <pre>jenkins-cli build artifacts &lt;path&gt; [ref]</pre>
       <p class="long">Returns the build&#39;s archived artifacts with a direct download URL for each.</p>
-      
-      
+
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-build-changes">
       <h2>jenkins-cli build changes</h2>
       <p class="short">Show the SCM commits in a build</p>
       <pre>jenkins-cli build changes &lt;path&gt; [ref]</pre>
       <p class="long">Returns the source-control changes a build picked up: commit id, author,
 message and affected paths. Works for both freestyle and pipeline jobs.</p>
-      
-      
+
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-build-get">
       <h2>jenkins-cli build get</h2>
       <p class="short">Get one build: result, timing, trigger cause</p>
@@ -196,10 +209,10 @@ message and affected paths. Works for both freestyle and pipeline jobs.</p>
       <p class="long">Returns a build&#39;s result and status, when it started (absolute and
 relative) and how long it ran, which node it ran on, what triggered it,
 and any build parameters. ref defaults to the latest build.</p>
-      
-      
+
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-build-list">
       <h2>jenkins-cli build list</h2>
       <p class="short">List a job&#39;s recent builds (newest first)</p>
@@ -214,9 +227,9 @@ many builds come back.</p>
         <tr><td><code>--limit</code></td><td><code>20</code></td><td>number of builds to return</td></tr>
         </tbody>
       </table>
-      
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-build-log">
       <h2>jenkins-cli build log</h2>
       <p class="short">Print a build&#39;s console output</p>
@@ -240,17 +253,17 @@ not the overall follow loop. Agents should set a host-side deadline.</p>
   jenkins-cli build log my-app 128
   jenkins-cli build log my-app 128 --start 1024 --follow</pre>
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-build-stages">
       <h2>jenkins-cli build stages</h2>
       <p class="short">Show a Pipeline build&#39;s stage-by-stage status</p>
       <pre>jenkins-cli build stages &lt;path&gt; [ref]</pre>
       <p class="long">Returns each Pipeline stage with its status and duration, so you can see
 exactly which stage failed. Applies to Pipeline / multibranch jobs only.</p>
-      
-      
+
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-build-stop">
       <h2>jenkins-cli build stop</h2>
       <p class="short">Abort a running build (write)</p>
@@ -265,9 +278,9 @@ mode unless --allow-writes is given.</p>
         <tr><td><code>--dry-run</code></td><td><code>false</code></td><td>print the request without stopping the build</td></tr>
         </tbody>
       </table>
-      
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-build-tests">
       <h2>jenkins-cli build tests</h2>
       <p class="short">Show a build&#39;s test results</p>
@@ -282,27 +295,27 @@ the high-signal view when triaging a red build.</p>
         <tr><td><code>--failed-only</code></td><td><code>false</code></td><td>keep only failing test cases</td></tr>
         </tbody>
       </table>
-      
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-config">
       <h2>jenkins-cli config</h2>
       <p class="short">Set up and inspect configuration and contexts</p>
       <pre>jenkins-cli config</pre>
-      
-      
-      
+
+
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-config-contexts">
       <h2>jenkins-cli config contexts</h2>
       <p class="short">List configured contexts and which one is current</p>
       <pre>jenkins-cli config contexts</pre>
-      
-      
-      
+
+
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-config-init">
       <h2>jenkins-cli config init</h2>
       <p class="short">Interactively configure a context and store credentials</p>
@@ -325,25 +338,43 @@ JENKINS_URL / JENKINS_USER / JENKINS_TOKEN (or JENKINS_PASSWORD) instead.</p>
   jenkins-cli config init             # plain line-by-line wizard (scripts, non-TTY)
   jenkins-cli config init --context prod   # add/update a named context directly</pre>
     </section>
-    
+
+    <section class="cmd" id="jenkins-cli-config-set-context">
+      <h2>jenkins-cli config set-context</h2>
+      <p class="short">Configure service presets without credentials or network access</p>
+      <pre>jenkins-cli config set-context &lt;name&gt; [flags]</pre>
+      <p class="long">Write service fields from flags, environment or .env over the named target context. Personal environment fields and secrets are ignored. Existing conflicting fields require --overwrite; unrelated contexts and user identities are preserved.</p>
+      <h3>Options</h3>
+      <table>
+        <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+        <tr><td><code>--activate</code></td><td><code>false</code></td><td>make this the current context</td></tr>
+        <tr><td><code>--dry-run</code></td><td><code>false</code></td><td>preview configuration changes without writing files or credentials</td></tr>
+        <tr><td><code>--overwrite</code></td><td><code>false</code></td><td>update conflicting service fields; preserve personal identity and credentials</td></tr>
+        </tbody>
+      </table>
+      <h3>Examples</h3><pre>  jenkins-cli config set-context team --base-url https://service.example.com --dry-run
+  jenkins-cli config set-context team --base-url https://service.example.com --activate</pre>
+    </section>
+
     <section class="cmd" id="jenkins-cli-config-show">
       <h2>jenkins-cli config show</h2>
       <p class="short">Show the resolved configuration with field provenance</p>
       <pre>jenkins-cli config show</pre>
-      
-      
-      
+
+
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-config-use-context">
       <h2>jenkins-cli config use-context</h2>
       <p class="short">Set the current context</p>
       <pre>jenkins-cli config use-context &lt;name&gt;</pre>
-      
-      
-      
+
+
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-doctor">
       <h2>jenkins-cli doctor</h2>
       <p class="short">Check configuration, credentials and connectivity</p>
@@ -362,7 +393,7 @@ It also reports whether a newer jenkins-cli release is available.</p>
       <h3>Examples</h3><pre>  jenkins-cli doctor
   jenkins-cli doctor --no-update-check</pre>
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-job">
       <h2>jenkins-cli job</h2>
       <p class="short">Discover jobs and trigger builds</p>
@@ -372,10 +403,10 @@ instance. `job list` is the discovery map; `job get` shows one job&#39;s
 detail (parameters, health, branch jobs, last-build pointers); `job
 build` triggers a build. Job paths are folder/job[/branch] — list to
 find the exact name before querying.</p>
-      
-      
+
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-job-build">
       <h2>jenkins-cli job build</h2>
       <p class="short">Trigger a build of a job (write)</p>
@@ -396,7 +427,7 @@ read-only mode unless --allow-writes is given.</p>
   jenkins-cli job build my-app --param BRANCH=main --param CLEAN=true
   jenkins-cli job build my-app --param BRANCH=main --dry-run</pre>
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-job-get">
       <h2>jenkins-cli job get</h2>
       <p class="short">Get one job, including parameters and last-build pointers</p>
@@ -405,10 +436,10 @@ read-only mode unless --allow-writes is given.</p>
 build parameters, health, last / lastSuccessful / lastFailed build
 pointers, and — for folders and multibranch projects — the child jobs
 (branches and PRs).</p>
-      
-      
+
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-job-list">
       <h2>jenkins-cli job list</h2>
       <p class="short">List jobs (the discovery map)</p>
@@ -427,9 +458,9 @@ field (success / failure / unstable / building / disabled / not_built).</p>
         <tr><td><code>--folder</code></td><td></td><td>list jobs inside this folder, or branches of this multibranch project</td></tr>
         </tbody>
       </table>
-      
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-queue">
       <h2>jenkins-cli queue</h2>
       <p class="short">Inspect and manage the build queue</p>
@@ -437,10 +468,10 @@ field (success / failure / unstable / building / disabled / not_built).</p>
       <p class="long">The queue holds builds waiting to start. List it to see what is pending
 or blocked and why, inspect one item, or cancel a queued build before it
 runs.</p>
-      
-      
+
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-queue-cancel">
       <h2>jenkins-cli queue cancel</h2>
       <p class="short">Cancel a queued build before it starts (write)</p>
@@ -455,9 +486,9 @@ read-only mode unless --allow-writes is given.</p>
         <tr><td><code>--dry-run</code></td><td><code>false</code></td><td>print the request without cancelling</td></tr>
         </tbody>
       </table>
-      
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-queue-get">
       <h2>jenkins-cli queue get</h2>
       <p class="short">Get one queue item</p>
@@ -467,28 +498,28 @@ build under executable (number and URL) once it starts. Use that number
 with build get or build log; do not substitute the job&#39;s latest build.
 A missing executable means no build assignment is available yet; a 404
 does not prove that the item started or was cancelled.</p>
-      
-      
+
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-queue-list">
       <h2>jenkins-cli queue list</h2>
       <p class="short">List builds waiting in the queue</p>
       <pre>jenkins-cli queue list</pre>
-      
-      
-      
+
+
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-skill">
       <h2>jenkins-cli skill</h2>
       <p class="short">Install the companion Skill for coding agents</p>
       <pre>jenkins-cli skill</pre>
-      
-      
-      
+
+
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-skill-install">
       <h2>jenkins-cli skill install</h2>
       <p class="short">Deploy the embedded Skill into a coding agent&#39;s skills directory</p>
@@ -507,14 +538,14 @@ Skill to the matching version, then reload the agent context.</p>
         <tr><td><code>--project</code></td><td><code>false</code></td><td>install into each agent&#39;s project skills directory instead of $HOME</td></tr>
         </tbody>
       </table>
-      
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-skill-path">
       <h2>jenkins-cli skill path</h2>
       <p class="short">Print Skill paths, installation state and version alignment</p>
       <pre>jenkins-cli skill path [flags]</pre>
-      
+
       <h3>Options</h3>
       <table>
         <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
@@ -524,23 +555,23 @@ Skill to the matching version, then reload the agent context.</p>
         <tr><td><code>--project</code></td><td><code>false</code></td><td>use the project skills directories instead of $HOME</td></tr>
         </tbody>
       </table>
-      
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-skill-show">
       <h2>jenkins-cli skill show</h2>
       <p class="short">Print the embedded SKILL.md to stdout</p>
       <pre>jenkins-cli skill show</pre>
-      
-      
-      
+
+
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-skill-status">
       <h2>jenkins-cli skill status</h2>
       <p class="short">Report loaded, installed and embedded Skill versions</p>
       <pre>jenkins-cli skill status [flags]</pre>
-      
+
       <h3>Options</h3>
       <table>
         <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
@@ -548,9 +579,9 @@ Skill to the matching version, then reload the agent context.</p>
         <tr><td><code>--project</code></td><td><code>false</code></td><td>check each agent&#39;s project skills directory instead of $HOME</td></tr>
         </tbody>
       </table>
-      
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-skill-uninstall">
       <h2>jenkins-cli skill uninstall</h2>
       <p class="short">Remove the companion Skill from a coding agent&#39;s skills directory</p>
@@ -567,18 +598,18 @@ and removes the Skill from each one found.</p>
         <tr><td><code>--project</code></td><td><code>false</code></td><td>remove from each agent&#39;s project skills directory instead of $HOME</td></tr>
         </tbody>
       </table>
-      
+
     </section>
-    
+
     <section class="cmd" id="jenkins-cli-version">
       <h2>jenkins-cli version</h2>
       <p class="short">Print version information</p>
       <pre>jenkins-cli version</pre>
-      
-      
-      
+
+
+
     </section>
-    
+
   </main>
 </div>
 <footer class="footer">

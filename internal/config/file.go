@@ -12,8 +12,9 @@ import (
 // authShape / defaultsShape / contextShape are the on-disk YAML building
 // blocks. Timeout is a human-readable duration string ("30s").
 type authShape struct {
-	Scheme   string `yaml:"scheme,omitempty"`
-	Username string `yaml:"username,omitempty"`
+	CredentialURL string `yaml:"credential_url,omitempty"`
+	Scheme        string `yaml:"scheme,omitempty"`
+	Username      string `yaml:"username,omitempty"`
 }
 
 type defaultsShape struct {
@@ -120,7 +121,7 @@ func ReadFile(dir string) (File, bool, error) {
 		f.Contexts = append(f.Contexts, NamedContext{
 			Name:    cs.Name,
 			BaseURL: cs.Server,
-			Auth:    AuthConfig{Scheme: cs.Auth.Scheme, Username: cs.Auth.Username},
+			Auth:    AuthConfig{Scheme: cs.Auth.Scheme, Username: cs.Auth.Username, CredentialURL: cs.Auth.CredentialURL},
 		})
 	}
 	return f, true, nil
@@ -138,7 +139,7 @@ func WriteFile(dir string, f File) error {
 		fs.Contexts = append(fs.Contexts, contextShape{
 			Name:   c.Name,
 			Server: c.BaseURL,
-			Auth:   authShape{Scheme: c.Auth.Scheme, Username: c.Auth.Username},
+			Auth:   authShape{Scheme: c.Auth.Scheme, Username: c.Auth.Username, CredentialURL: c.Auth.CredentialURL},
 		})
 	}
 	fs.Defaults.Format = f.Defaults.Format
@@ -152,7 +153,24 @@ func WriteFile(dir string, f File) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(ConfigFilePath(dir), out, 0o600)
+	// Replace atomically so a failed write does not truncate an existing config.
+	tmp, err := os.CreateTemp(dir, ".config-*.tmp")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmp.Name())
+	if err := tmp.Chmod(0o600); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if _, err := tmp.Write(out); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	return os.Rename(tmp.Name(), ConfigFilePath(dir))
 }
 
 // defaultsFromShape converts the on-disk defaults block into a Defaults value.

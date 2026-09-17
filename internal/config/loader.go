@@ -12,14 +12,18 @@ import (
 // FlagValues carries the global CLI flags that override configuration. Empty
 // fields are ignored (not treated as overrides).
 type FlagValues struct {
-	BaseURL string
-	Format  string
-	Timeout string
+	AuthScheme    string
+	CredentialURL string
+	BaseURL       string
+	Format        string
+	Timeout       string
 }
 
 func (f FlagValues) layer() map[string]string {
 	m := map[string]string{}
 	put(m, fieldServer, f.BaseURL)
+	put(m, fieldAuthScheme, f.AuthScheme)
+	put(m, fieldCredentialURL, f.CredentialURL)
 	put(m, fieldFormat, f.Format)
 	put(m, fieldTimeout, f.Timeout)
 	return m
@@ -28,6 +32,9 @@ func (f FlagValues) layer() map[string]string {
 // LoadOptions controls where configuration is read from. All fields are
 // optional; sensible defaults are used when empty.
 type LoadOptions struct {
+	// Setup resolves Context even when new, ignores runtime context selection,
+	// and excludes personal environment fields before auth-scheme inference.
+	Setup bool
 	// ConfigDir overrides the directory containing config.yaml.
 	ConfigDir string
 	// DotenvPath overrides the .env file path. Empty means ".env".
@@ -104,6 +111,7 @@ func buildFileLayer(f File, ctxName string) map[string]string {
 			put(m, fieldServer, c.BaseURL)
 			put(m, fieldAuthScheme, c.Auth.Scheme)
 			put(m, fieldAuthUsername, c.Auth.Username)
+			put(m, fieldCredentialURL, c.Auth.CredentialURL)
 		}
 	}
 	put(m, fieldFormat, f.Defaults.Format)
@@ -134,9 +142,16 @@ func Load(opt LoadOptions) (*Resolved, error) {
 	if err != nil {
 		return nil, err
 	}
-	ctxName, ctxSource, err := selectContext(file, opt.Context, os.Getenv("JENKINS_CONTEXT"))
-	if err != nil {
-		return nil, err
+	ctxName, ctxSource := opt.Context, ContextSourceFlag
+	if opt.Setup {
+		if c, ok := file.Context(ctxName); ok {
+			ctxName = c.Name
+		}
+	} else {
+		ctxName, ctxSource, err = selectContext(file, opt.Context, os.Getenv("JENKINS_CONTEXT"))
+		if err != nil {
+			return nil, err
+		}
 	}
 	fileLayer := buildFileLayer(file, ctxName)
 
@@ -144,7 +159,7 @@ func Load(opt LoadOptions) (*Resolved, error) {
 	if dotenvPath == "" {
 		dotenvPath = ".env"
 	}
-	dotLayer, err := dotenvLayer(dotenvPath)
+	dotLayer, err := dotenvLayer(dotenvPath, opt.Setup)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +169,7 @@ func Load(opt LoadOptions) (*Resolved, error) {
 		{"default", defaultLayer()},
 		{"file", fileLayer},
 		{"dotenv", dotLayer},
-		{"env", envLayer()},
+		{"env", envLayer(opt.Setup)},
 		{"flag", opt.Flags.layer()},
 	}
 
@@ -167,6 +182,7 @@ func Load(opt LoadOptions) (*Resolved, error) {
 		}
 	}
 
+	resolveAuthDefaults(merged, sources)
 	return &Resolved{
 		Config: configFromMap(merged),
 		Secrets: Secrets{

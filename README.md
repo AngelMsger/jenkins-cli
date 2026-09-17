@@ -297,3 +297,7 @@ built for coding agents. Browse the full set at
 ## License
 
 Released under the [MIT License](LICENSE).
+
+## Team setup
+
+An installer can run `jenkins-cli config set-context team --base-url <url> --auth-scheme token --activate` without credentials or network access. Members then run `jenkins-cli auth guide` and `jenkins-cli auth login`. See [team distribution and personal login](docs/installation.md#team-distribution-and-personal-login) for environment-only presets, conflict handling, and version-specific credential pages.

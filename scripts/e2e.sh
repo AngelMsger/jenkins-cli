@@ -38,7 +38,7 @@ export JENKINS_USER="alice"
 export JENKINS_TOKEN="tok"
 export JENKINS_RELEASE_API="$URL/releases/latest"
 export JENKINS_CLI_NO_UPDATE_NOTIFIER=1
-export JENKINS_CLI_SKILL=0.2.1
+export JENKINS_CLI_SKILL=0.2.2
 
 run() { "$BIN" --config "$TMP" "$@"; }
 
@@ -81,7 +81,7 @@ mkdir -p "$SKILL_HOME"
 check "skill install for Codex" '"alignment": "current"' -- \
   env HOME="$SKILL_HOME" "$BIN" --config "$TMP" skill install --agent codex
 check "skill status version aligned" '"loaded_status": "current"' -- \
-  env HOME="$SKILL_HOME" JENKINS_CLI_SKILL=0.2.1 "$BIN" --config "$TMP" skill status
+  env HOME="$SKILL_HOME" JENKINS_CLI_SKILL=0.2.2 "$BIN" --config "$TMP" skill status
 legacy_out="$(env HOME="$SKILL_HOME" JENKINS_CLI_SKILL=1 JENKINS_CLI_NO_UPDATE_NOTIFIER=1 \
   "$BIN" --config "$TMP" job list 2>&1 || true)"
 if grep -q '"status":"unknown"' <<<"$legacy_out"; then
@@ -90,7 +90,7 @@ if grep -q '"status":"unknown"' <<<"$legacy_out"; then
 else
   echo "FAIL - legacy Skill handshake is detected"; exit 1
 fi
-update_out="$(env -u JENKINS_CLI_NO_UPDATE_NOTIFIER JENKINS_CLI_SKILL=0.2.1 \
+update_out="$(env -u JENKINS_CLI_NO_UPDATE_NOTIFIER JENKINS_CLI_SKILL=0.2.2 \
   "$BIN" --config "$TMP" job list 2>&1 || true)"
 if grep -q '"next_steps"' <<<"$update_out" && grep -q 'jenkins-cli skill install' <<<"$update_out"; then
   echo "ok   - update notice includes Skill refresh"
@@ -143,3 +143,5 @@ rm -rf "$CFG"
 
 echo ""
 echo "e2e: $pass checks passed"
+
+"$ROOT/scripts/e2e-setup.sh"
