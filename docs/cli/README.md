@@ -79,4 +79,3 @@ is published at <https://angelmsger.github.io/jenkins-cli/cli/>.
 | Command | Description |
 | --- | --- |
 | [`jenkins-cli version`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-version) | Print version information |
-
