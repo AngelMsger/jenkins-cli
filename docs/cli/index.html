@@ -30,6 +30,7 @@
       <a href="#jenkins-cli-auth-guide">jenkins-cli auth guide</a>
       <a href="#jenkins-cli-auth-login">jenkins-cli auth login</a>
       <a href="#jenkins-cli-auth-logout">jenkins-cli auth logout</a>
+      <a href="#jenkins-cli-auth-reuse">jenkins-cli auth reuse</a>
       <a href="#jenkins-cli-auth-status">jenkins-cli auth status</a>
       </div>
     <div class="side-group">
@@ -159,6 +160,27 @@ JENKINS_USER &#43; JENKINS_TOKEN (or JENKINS_PASSWORD) instead.</p>
       <pre>jenkins-cli auth logout</pre>
 
 
+
+    </section>
+
+    <section class="cmd" id="jenkins-cli-auth-reuse">
+      <h2>jenkins-cli auth reuse</h2>
+      <p class="short">Reuse an existing login in the selected context without signing in again</p>
+      <pre>jenkins-cli auth reuse [flags]</pre>
+      <p class="long">Match stored contexts by complete service URL, authentication scheme and service scope.
+Verify a matching stored credential before filling a missing personal identity in
+the selected context. Never copy secrets, replace an existing identity, activate
+a context, or read credentials from environment variables. Dry-run performs
+read-only verification and reports the same proposed association. An unchanged
+or unavailable result is not proof of authentication; use auth status to check.</p>
+      <h3>Options</h3>
+      <table>
+        <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+        <tr><td><code>--dry-run</code></td><td><code>false</code></td><td>verify and preview the identity association without writing</td></tr>
+        <tr><td><code>--from-context</code></td><td></td><td>choose a matching source from config contexts when multiple identities are available</td></tr>
+        </tbody>
+      </table>
 
     </section>
 

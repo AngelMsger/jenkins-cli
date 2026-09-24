@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-09-24
+### Added
+
+- Add `auth reuse` to verify and associate an existing matching login with a team
+  context without another login or copying secrets; include dry-run and explicit
+  source selection for ambiguous identities.
+
+
 ## [0.9.0] - 2026-09-17
 
 ### Added
@@ -22,7 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Persist the personal username and authentication scheme after login; verify
   authentication and reject a mismatched service before storing credentials.
 - Preserve credential-page metadata and replace configuration files atomically.
-
 
 ## [0.8.2] - 2026-09-16
 
@@ -92,7 +99,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   each product's home and project markers; `--agent` accepts the full id
   list. Installation guides, generated CLI docs, and help text stay in sync.
 
-
 ## [0.6.1] - 2026-08-11
 
 ### Added
@@ -103,7 +109,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `./.pi` alongside Claude Code, Codex, and Grok Build. Installation guides,
   generated CLI docs, and agent help text list the new target.
 
-
 ## [0.6.0] - 2026-08-11
 
 ### Added
@@ -113,7 +118,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `./.grok/skills/<name>` with `--project`. Auto-detection probes `~/.grok` /
   `./.grok` alongside Claude Code and Codex. Installation guides, generated CLI
   docs, and agent help text list the new target.
-
 
 ## [0.5.0] - 2026-07-16
 
@@ -291,7 +295,8 @@ workflow.
   release binaries and `make install`. A generated CLI reference (`docs/cli/`)
   and a GitHub Pages landing page.
 
-[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/AngelMsger/jenkins-cli/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/AngelMsger/jenkins-cli/compare/v0.8.2...v0.9.0
 [0.8.2]: https://github.com/AngelMsger/jenkins-cli/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/AngelMsger/jenkins-cli/compare/v0.8.0...v0.8.1

@@ -12,6 +12,7 @@ is published at <https://angelmsger.github.io/jenkins-cli/cli/>.
 | [`jenkins-cli auth guide`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-auth-guide) | Show offline credential acquisition guidance for this service |
 | [`jenkins-cli auth login`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-auth-login) | Store credentials for the active context (interactive) |
 | [`jenkins-cli auth logout`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-auth-logout) | Remove the stored credential for the active context |
+| [`jenkins-cli auth reuse`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-auth-reuse) | Reuse an existing login in the selected context without signing in again |
 | [`jenkins-cli auth status`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-auth-status) | Show the active identity and verify connectivity |
 
 ## build

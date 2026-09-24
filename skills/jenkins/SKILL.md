@@ -1,6 +1,6 @@
 ---
 name: jenkins
-version: 0.2.2
+version: 0.2.4
 description: "Inspect Jenkins jobs, folders, multibranch branches/PRs, build status/history, console logs, Pipeline stages, failing tests, SCM changes and the build queue; trigger, stop or cancel builds when authorized. Use for Jenkins questions, known Jenkins-backed CI, Jenkins job/build URLs, latest success/failure, red builds, failed stages/tests, console output, changes in a build, queued work, or rebuild/start/stop/abort/cancel requests. JSON and structured errors support agent workflows. Reuse existing host configuration and credentials; setup uses jenkins-cli config init or JENKINS_URL / JENKINS_USER / JENKINS_TOKEN. Inspection is read-only. --allow-writes overrides configured read-only mode for an authorized write."
 metadata:
   requires:
@@ -136,7 +136,7 @@ jenkins-cli skill status|install|path|show|uninstall # manage the companion Skil
 
 ## Agent-facing conventions
 
-- **Skill handshake — set `JENKINS_CLI_SKILL=0.2.2`.** Once you have loaded
+- **Skill handshake — set `JENKINS_CLI_SKILL=0.2.4`.** Once you have loaded
   this Skill, export that exact value in the environment used to run the CLI.
   The CLI compares it with the embedded Skill version and emits a structured
   stderr notice when the Skill is missing, old, or uses the legacy unversioned
@@ -180,3 +180,10 @@ jenkins-cli skill status|install|path|show|uninstall # manage the companion Skil
 
 See [team setup](references/team-setup.md) for the output fields, conflict
 semantics, credential URL overrides, and failure recovery.
+
+
+## Reuse existing authentication
+
+Before repeating login, preview `jenkins-cli --use-context <target> auth reuse
+--dry-run`, then apply. Keep the separate `auth status` check. See
+[reuse and ambiguity recovery](references/getting-started.md#reuse-existing-authentication).

@@ -50,9 +50,12 @@ type NamedContext struct {
 
 // Config holds the resolved, non-secret configuration.
 type Config struct {
-	BaseURL  string     `yaml:"server"`
-	Auth     AuthConfig `yaml:"auth"`
-	Defaults Defaults   `yaml:"defaults"`
+	// CredentialBaseURL preserves an equivalent stored URL's native lookup key.
+	// It is runtime-only and never changes the request destination.
+	CredentialBaseURL string     `yaml:"-" json:"-"`
+	BaseURL           string     `yaml:"server"`
+	Auth              AuthConfig `yaml:"auth"`
+	Defaults          Defaults   `yaml:"defaults"`
 }
 
 // AuthConfig holds non-secret auth settings. Username is the Jenkins login the
