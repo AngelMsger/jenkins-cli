@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Current Jenkins lists remain unpaginated and emit no continuation notice.
 - Update the companion Skill to `0.2.5` and clarify the unpaginated output
   contract in help and documentation.
+- Name all thirteen coding agents `skill install` detects on the landing page,
+  which listed two, and link all seven family CLIs from the README and the
+  landing page.
 
 ## [0.10.0] - 2026-09-24
 ### Added
