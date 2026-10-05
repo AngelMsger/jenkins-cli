@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Align the shared NDJSON renderer with the family pagination contract: emit
+  continuation metadata on stderr after successful rows, preserve projections
+  and empty filtered pages, and support command-specific continuation flags.
+  Current Jenkins lists remain unpaginated and emit no continuation notice.
+- Update the companion Skill to `0.2.5` and clarify the unpaginated output
+  contract in help and documentation.
+
 ## [0.10.0] - 2026-09-24
 ### Added
 

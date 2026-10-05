@@ -1,6 +1,6 @@
 ---
 name: jenkins
-version: 0.2.4
+version: 0.2.5
 description: "Inspect Jenkins jobs, folders, multibranch branches/PRs, build status/history, console logs, Pipeline stages, failing tests, SCM changes and the build queue; trigger, stop or cancel builds when authorized. Use for Jenkins questions, known Jenkins-backed CI, Jenkins job/build URLs, latest success/failure, red builds, failed stages/tests, console output, changes in a build, queued work, or rebuild/start/stop/abort/cancel requests. JSON and structured errors support agent workflows. Reuse existing host configuration and credentials; setup uses jenkins-cli config init or JENKINS_URL / JENKINS_USER / JENKINS_TOKEN. Inspection is read-only. --allow-writes overrides configured read-only mode for an authorized write."
 metadata:
   requires:
@@ -136,7 +136,7 @@ jenkins-cli skill status|install|path|show|uninstall # manage the companion Skil
 
 ## Agent-facing conventions
 
-- **Skill handshake — set `JENKINS_CLI_SKILL=0.2.4`.** Once you have loaded
+- **Skill handshake — set `JENKINS_CLI_SKILL=0.2.5`.** Once you have loaded
   this Skill, export that exact value in the environment used to run the CLI.
   The CLI compares it with the embedded Skill version and emits a structured
   stderr notice when the Skill is missing, old, or uses the legacy unversioned
@@ -155,6 +155,10 @@ jenkins-cli skill status|install|path|show|uninstall # manage the companion Skil
   5 permission, 6 not found, …); see
   [errors-and-exit-codes.md](references/errors-and-exit-codes.md).
 - Lists come back as `{ "items": [...], "has_more": false }`.
+- `--format ndjson` writes only item rows to stdout. Current Jenkins list
+  endpoints are unpaginated, so they emit no pagination notice and accept no
+  continuation cursor. `build list --limit` bounds history; do not invent a
+  `--cursor` option.
 - `--fields a,b.c` projects output to just those dot-paths to save tokens.
 - `build log` prints raw console text; ordinary inspection results use JSON by
   default. Help, version and Skill-source commands have their own text output.

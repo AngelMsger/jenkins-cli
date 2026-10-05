@@ -108,7 +108,15 @@ distinction through per-check `status` and optional `recovery_scope`.
 ## Output (`internal/output`)
 
 `Emit` and `EmitList` render any value as `json` (default), `table`, or `ndjson`.
-Lists always use the `{items, next, has_more}` envelope. `--fields` projects
+JSON lists use the `{items, next, has_more}` envelope. NDJSON writes only rows
+to stdout. For paginated callers the shared renderer emits a structured
+`_notice.pagination` record containing `next` and `has_more` to stderr after
+successful row output, including filtered empty pages. `Options.NoticeWriter`
+defaults to stderr; `Options.NextFlag` controls the notice's `next_steps` and
+table footer and defaults to `--cursor`. Notice write failures do not fail a
+successful result. Current Jenkins list endpoints are unpaginated and emit no
+continuation notice; the renderer's default does not introduce a CLI flag.
+`--fields` projects
 results to dot-path keys before rendering. `--pretty` enables ANSI-colored JSON
 on a TTY (and is silently downgraded to plain JSON off a TTY). `build log` is the
 one command that prints raw text rather than JSON — console output is inherently

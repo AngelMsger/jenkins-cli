@@ -43,6 +43,12 @@ architecture of the sibling `confluence-cli` / `bitbucket-cli` / `openobserve-cl
 
 - Run `make test` and `make build` before claiming a change is complete.
 - stdout is data only; errors / notices / `--verbose` go to stderr.
+- Keep paginated NDJSON rows on stdout and continuation in a structured
+  `_notice.pagination` record on stderr after successful rendering, including
+  filtered empty pages. Keep the real continuation flag in table and notice
+  guidance; projections never remove pagination metadata.
+  Current Jenkins list endpoints are unpaginated: do not invent cursors or
+  advertise a `--cursor` flag for them.
 - Never commit credentials, `.env`, or build artifacts.
 
 ## Discoverability — no dead-end inputs

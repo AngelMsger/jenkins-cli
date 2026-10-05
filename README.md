@@ -188,6 +188,8 @@ export JENKINS_TOKEN='11abc…your-api-token'   # …or JENKINS_PASSWORD for bas
 
 In the default JSON output, list commands return a `{items, has_more}` envelope;
 `--format ndjson` instead streams the items themselves, one JSON object per line.
+Current list endpoints are unpaginated: NDJSON emits no pagination notice and
+there is no continuation flag. `build list --limit` bounds returned history.
 `--fields a,b.c` projects output down to specific dot-paths. A build reference is
 a number or a permalink keyword: `last`, `lastSuccessful`, `lastFailed`,
 `lastCompleted`, `lastStable`.

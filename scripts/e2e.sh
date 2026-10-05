@@ -59,6 +59,15 @@ check() { # check <label> <expected-substr> -- <command...>
 
 check "job list"        '"name": "app"'        -- run job list
 check "job list status" '"status": "failure"'  -- run job list
+run --format ndjson --fields name job list >"$TMP/jobs.ndjson" 2>"$TMP/jobs.stderr"
+if grep -qx '{"name":"app"}' "$TMP/jobs.ndjson" &&
+   ! grep -q '"_notice"\|"has_more"\|"next"' "$TMP/jobs.ndjson" &&
+   ! grep -q '"pagination"' "$TMP/jobs.stderr"; then
+  echo "ok   - unpaginated NDJSON keeps projected rows and no continuation"
+  pass=$((pass + 1))
+else
+  echo "FAIL - unpaginated NDJSON keeps projected rows and no continuation"; exit 1
+fi
 check "job get params"  '"BRANCH"'             -- run job get app
 check "build list"      '"number": 7'          -- run build list app
 check "build get"       '"result": "FAILURE"'  -- run build get app lastFailed

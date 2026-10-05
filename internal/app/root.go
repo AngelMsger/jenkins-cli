@@ -82,6 +82,8 @@ func newRootCmdWithState() (*cobra.Command, *appState) {
 			"discover jobs and branches, read build status, logs, test failures and\n" +
 			"pipeline stages, and trigger or stop builds. It emits agent-friendly\n" +
 			"JSON with structured errors, and works with any Jenkins instance.\n\n" +
+			"NDJSON writes one item per line to stdout. Current list endpoints are unpaginated;\n" +
+			"they do not expose a continuation cursor or pagination notice.\n\n" +
 			"AGENT NOTE: a companion Skill (\"jenkins\") carries the canonical usage,\n" +
 			"safety modes, and env setup and is the source of truth for driving this CLI.\n" +
 			"If you are an agent, load that Skill before composing commands. Check status\n" +
