@@ -108,3 +108,19 @@ verify native credentials before associating missing identity, and retain operat
 failures. Never copy secrets, infer identity from environment variables or activate
 a context. Cover dry-run, ambiguity, scope mismatch, concurrent edits and fresh-load
 credential resolution. Native self-configuration follows the existing read-only exception.
+
+## Credential storage and cleanup
+
+A stored secret is keyed by `<host>:<scheme>` (`auth.AccountKey`), not by
+context: every context on one Jenkins shares it, including a team preset and
+the personal context `auth reuse` associates with it. `config init` normalizes
+the server URL and only ever saves a secret; there is no orphan cleanup and no
+`config delete-context`, so `auth logout` is the single path that removes one.
+Keep it that way unless cleanup is designed in: forget a secret only when no
+remaining context resolves the same account, and only after the config write
+(the family reference is `forgetUnusedCredential` in `wecom-calendar-cli`).
+`internal/app/config_credentials_test.go` pins that an edit which merely
+respells the URL, or moves a context to another server, keeps every credential
+still in use. A test that runs the command tree must call `keyring.MockInit()`
+and clear `JENKINS_*` first, so it never reaches a developer's keychain or
+environment.
