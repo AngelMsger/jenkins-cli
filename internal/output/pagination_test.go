@@ -19,7 +19,7 @@ func TestNDJSONPagination(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var data, notices bytes.Buffer
-			err := EmitList(tc.rows, "opaque-next", true, Options{
+			err := EmitList(tc.rows, "opaque<next>&", true, Options{
 				Format: FormatNDJSON, Writer: &data, NoticeWriter: &notices, Fields: []string{"name"},
 			})
 			if err != nil {
@@ -44,9 +44,13 @@ func TestNDJSONPagination(t *testing.T) {
 			if err := json.Unmarshal(notices.Bytes(), &notice); err != nil {
 				t.Fatalf("invalid notice: %v: %s", err, notices.String())
 			}
-			if notice.Notice.Pagination.Next != "opaque-next" || !notice.Notice.Pagination.HasMore ||
+			if notice.Notice.Pagination.Next != "opaque<next>&" || !notice.Notice.Pagination.HasMore ||
 				len(notice.Notice.NextSteps) != 1 || !strings.Contains(notice.Notice.NextSteps[0], "--cursor") {
 				t.Fatalf("missing pagination: %s", notices.String())
+			}
+			// The token is opaque: it must reach the caller byte for byte, on one line.
+			if bytes.Count(notices.Bytes(), []byte("\n")) != 1 || !strings.Contains(notices.String(), `"next":"opaque<next>&"`) {
+				t.Fatalf("notice is not one compact line with the token unchanged: %q", notices.String())
 			}
 		})
 	}
