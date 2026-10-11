@@ -1,12 +1,13 @@
-// Package auth models Jenkins credentials, resolves them from configuration
-// or secure storage, and applies them to outgoing HTTP requests.
+// Package auth declares jenkins-cli's auth schemes and resolves credentials
+// from configuration or secure storage. The credential model, header encoding
+// and recovery errors come from agent-cli-kit/auth; this package registers
+// Jenkins's schemes and wording with it.
 package auth
 
 import (
-	"net/url"
-	"strings"
-
-	cerrors "github.com/angelmsger/jenkins-cli/pkg/errors"
+	kit "github.com/angelmsger/agent-cli-kit/auth"
+	"github.com/angelmsger/jenkins-cli/pkg/constants"
+	_ "github.com/angelmsger/jenkins-cli/pkg/errors" // installs Jenkins's error guidance
 )
 
 // Scheme identifies an authentication scheme. Jenkins authenticates API
@@ -20,57 +21,27 @@ const (
 	SchemeBasic = "basic"
 )
 
+func init() {
+	kit.Register(&kit.Product{
+		Schemes: []kit.Scheme{
+			{Name: SchemeToken, Kind: kit.Basic, MissingCode: "AUTH_NO_TOKEN",
+				Missing: "token auth requires both a username and an API token"},
+			{Name: SchemeBasic, Kind: kit.Basic,
+				Missing: "basic auth requires both a username and a password"},
+		},
+		DefaultScheme:    SchemeToken,
+		Name:             "Jenkins",
+		Doctor:           constants.AppName + " doctor",
+		MissingStep:      "Only if the host retry also reports missing credentials, run `" + constants.AppName + " config init` in the user's terminal or set JENKINS_* environment variables.",
+		InaccessibleStep: "Do not run `config init` unless the same check also fails in the host environment.",
+		ListSchemes:      true,
+	})
+}
+
 // Credential is a fully resolved credential ready to authenticate requests.
-type Credential struct {
-	Scheme   string
-	Username string // the Jenkins login the secret belongs to
-	Secret   string // API token (token) or password (basic)
-}
-
-// Validate reports whether the credential is internally consistent. Both
-// schemes require a username and a secret — Jenkins Basic auth is
-// username:secret on the wire.
-func (c Credential) Validate() error {
-	switch c.Scheme {
-	case SchemeToken:
-		if c.Username == "" || c.Secret == "" {
-			return cerrors.New(cerrors.CategoryConfig, "AUTH_NO_TOKEN",
-				"token auth requires both a username and an API token")
-		}
-	case SchemeBasic:
-		if c.Username == "" || c.Secret == "" {
-			return cerrors.New(cerrors.CategoryConfig, "AUTH_NO_BASIC",
-				"basic auth requires both a username and a password")
-		}
-	default:
-		return cerrors.Newf(cerrors.CategoryConfig, "AUTH_BAD_SCHEME",
-			"unknown auth scheme %q (want token or basic)", c.Scheme)
-	}
-	return nil
-}
-
-// Redacted returns a copy safe for logging: the secret is masked.
-func (c Credential) Redacted() Credential {
-	c.Secret = maskSecret(c.Secret)
-	return c
-}
-
-func maskSecret(s string) string {
-	if s == "" {
-		return ""
-	}
-	if len(s) <= 4 {
-		return "****"
-	}
-	return strings.Repeat("*", len(s)-4) + s[len(s)-4:]
-}
+// Its Validate, Header, Decorator and Redacted methods follow the schemes
+// registered above.
+type Credential = kit.Credential
 
 // AccountKey derives the keychain account identifier for a base URL and scheme.
-// It is stable across runs so credentials can be located later.
-func AccountKey(baseURL, scheme string) string {
-	host := baseURL
-	if u, err := url.Parse(baseURL); err == nil && u.Host != "" {
-		host = u.Host
-	}
-	return host + ":" + scheme
-}
+func AccountKey(baseURL, scheme string) string { return kit.AccountKey(baseURL, scheme) }

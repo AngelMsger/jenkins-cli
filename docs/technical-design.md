@@ -25,11 +25,11 @@ cmd/jenkins-cli  →  internal/app  →  pkg/apiclient  →  pkg/transport
 
 Cross-cutting packages — `errors`, `output`, `config`, `auth`, `timeutil`,
 `cliflags`, `constants` — are used across the layers. `output`, `cliflags`,
-`update`, the credential store, and the code behind `pkg/errors` and
-`pkg/transport` come from
+`update`, the credential store, credential resolution, and the code behind
+`pkg/errors` and `pkg/transport` come from
 [agent-cli-kit](https://github.com/AngelMsger/agent-cli-kit), shared by every
 CLI in the family; jenkins-cli supplies its own hints, User-Agent, keychain
-service name and release repository.
+service name, auth schemes and release repository.
 
 ## Command layer (`internal/app`)
 
@@ -143,7 +143,9 @@ kubectl-style named **contexts** with a `current_context`; `--use-context` and
 
 Jenkins authenticates API requests with HTTP Basic. Two schemes, identical on the
 wire (`Basic base64(username:secret)`): `token` (username + API token,
-recommended) and `basic` (username + password). `Resolve` produces a validated
+recommended) and `basic` (username + password). `internal/auth` registers
+them with agent-cli-kit's `auth` package, which owns the credential model, the
+header encoding and the recovery errors. `Resolve` produces a validated
 `Credential` from config + secrets, loading the secret from the keychain when not
 supplied via flags/env. The `Store` (agent-cli-kit's `credstore`, under the
 `jenkins-cli` keychain service) prefers the OS keychain (`go-keyring`) and
