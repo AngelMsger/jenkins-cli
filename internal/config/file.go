@@ -40,6 +40,22 @@ type fileShape struct {
 // match names the same way.
 type File = kit.File[NamedContext, Defaults]
 
+// NormalizeContextName trims and lower-cases a context name about to be saved.
+// Never apply it to a name being looked up: File.Context already ignores case.
+func NormalizeContextName(name string) string { return kit.NormalizeContextName(name) }
+
+// ListContextsStep is the command that lists contexts, as a next step.
+func ListContextsStep() string { return kit.ListContextsStep() }
+
+// UseContext makes the named context current and returns its stored name, or
+// UNKNOWN_CONTEXT when there is no such context.
+func UseContext(f *File, name string) (string, error) { return kit.UseContext(f, name) }
+
+// DeleteContext removes the named context and returns it; the first remaining
+// context becomes current when it was. It returns UNKNOWN_CONTEXT or
+// LAST_CONTEXT instead when the name is unknown or the context is the only one.
+func DeleteContext(f *File, name string) (NamedContext, error) { return kit.DeleteContext(f, name) }
+
 // DefaultConfigDir returns the per-user config directory
 // (~/.angelmsger/jenkins).
 func DefaultConfigDir() (string, error) { return kit.DefaultDir() }

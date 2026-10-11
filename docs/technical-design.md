@@ -166,8 +166,10 @@ Jenkins share one secret rather than holding a copy each. `config init` saves
 under the normalized server URL and never deletes an entry: respelling a
 context's URL or moving it to another server leaves every secret another
 context still resolves, at the cost of a harmless orphan when the old server
-is no longer configured. `auth logout` is the only command that removes a
-secret, and it removes the shared entry for that server and scheme.
+is no longer configured. `auth logout` removes the shared entry for the
+active context's server and scheme. `config delete-context` removes the
+deleted context's entry only when no remaining context resolves the same
+account, and only after the config file is written.
 
 ## Time (`pkg/timeutil`)
 

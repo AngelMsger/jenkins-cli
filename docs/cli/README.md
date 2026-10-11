@@ -34,7 +34,8 @@ is published at <https://angelmsger.github.io/jenkins-cli/cli/>.
 | Command | Description |
 | --- | --- |
 | [`jenkins-cli config`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-config) | Set up and inspect configuration and contexts |
-| [`jenkins-cli config contexts`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-config-contexts) | List configured contexts and which one is current |
+| [`jenkins-cli config delete-context`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-config-delete-context) | Delete a context and its stored credential |
+| [`jenkins-cli config get-contexts`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-config-get-contexts) | List configured contexts and which one is current |
 | [`jenkins-cli config init`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-config-init) | Interactively configure a context and store credentials |
 | [`jenkins-cli config set-context`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-config-set-context) | Configure service presets without credentials or network access |
 | [`jenkins-cli config show`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-config-show) | Show the resolved configuration with field provenance |
