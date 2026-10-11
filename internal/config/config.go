@@ -2,17 +2,21 @@
 // environment variables, a .env file, a YAML config file and built-in
 // defaults, in that precedence order (highest first).
 //
+// The engine — layering, provenance, context selection, the atomic file
+// write and team presets — comes from agent-cli-kit/config. This package
+// registers jenkins-cli's fields, environment variables, file location and
+// command wording with it (schema.go), keeps the YAML shape of the file
+// (file.go), and keeps the names the rest of the repo uses.
+//
 // Secrets (passwords, tokens) are never stored in the YAML config file. They
 // are surfaced through Resolved.Secrets when supplied via flags/env/.env, or
 // loaded from the OS keychain by the auth package.
 package config
 
 import (
-	"strconv"
-	"strings"
 	"time"
 
-	"github.com/angelmsger/jenkins-cli/pkg/constants"
+	kit "github.com/angelmsger/agent-cli-kit/config"
 )
 
 // Auth scheme values.
@@ -26,25 +30,25 @@ const (
 )
 
 // DefaultContextName is the name given to an unnamed context.
-const DefaultContextName = "default"
+const DefaultContextName = kit.DefaultContextName
 
 // Context selection sources, reported on Resolved.ContextSource. The first two
 // are explicit (the caller named a context for this invocation); the rest are
 // implicit (the CLI fell back to a stored or sole context).
 const (
-	ContextSourceFlag    = "flag"            // --use-context
-	ContextSourceEnv     = "env"             // JENKINS_CONTEXT
-	ContextSourceCurrent = "current_context" // the file's current_context
-	ContextSourceSingle  = "single"          // the sole defined context
-	ContextSourceDefault = "default-name"    // a context literally named "default"
-	ContextSourceNone    = "none"            // nothing selected (no/empty config)
+	ContextSourceFlag    = kit.ContextSourceFlag    // --use-context
+	ContextSourceEnv     = kit.ContextSourceEnv     // JENKINS_CONTEXT
+	ContextSourceCurrent = kit.ContextSourceCurrent // the file's current_context
+	ContextSourceSingle  = kit.ContextSourceSingle  // the sole defined context
+	ContextSourceDefault = kit.ContextSourceDefault // a context literally named "default"
+	ContextSourceNone    = kit.ContextSourceNone    // nothing selected (no/empty config)
 )
 
 // NamedContext is one named Jenkins server profile inside the config file.
 // Runtime defaults are shared across contexts and live in File.Defaults.
 type NamedContext struct {
-	Name    string
-	BaseURL string
+	Name    string `config:"name"`
+	BaseURL string `config:"server"`
 	Auth    AuthConfig
 }
 
@@ -53,7 +57,7 @@ type Config struct {
 	// CredentialBaseURL preserves an equivalent stored URL's native lookup key.
 	// It is runtime-only and never changes the request destination.
 	CredentialBaseURL string     `yaml:"-" json:"-"`
-	BaseURL           string     `yaml:"server"`
+	BaseURL           string     `yaml:"server" config:"server"`
 	Auth              AuthConfig `yaml:"auth"`
 	Defaults          Defaults   `yaml:"defaults"`
 }
@@ -61,27 +65,27 @@ type Config struct {
 // AuthConfig holds non-secret auth settings. Username is the Jenkins login the
 // API token (or password) belongs to.
 type AuthConfig struct {
-	CredentialURL string `yaml:"credential_url,omitempty"`
-	Scheme        string `yaml:"scheme"`
-	Username      string `yaml:"username,omitempty"`
+	CredentialURL string `yaml:"credential_url,omitempty" config:"auth.credential_url"`
+	Scheme        string `yaml:"scheme" config:"auth.scheme"`
+	Username      string `yaml:"username,omitempty" config:"auth.username"`
 }
 
 // Defaults holds tunable runtime defaults.
 type Defaults struct {
-	Format     string        `yaml:"format"`
-	Timeout    time.Duration `yaml:"timeout"`
-	MaxRetries int           `yaml:"max_retries"`
+	Format     string        `yaml:"format" config:"defaults.format"`
+	Timeout    time.Duration `yaml:"timeout" config:"defaults.timeout"`
+	MaxRetries int           `yaml:"max_retries" config:"defaults.max_retries"`
 	// ReadOnly blocks every mutating client method. Settable from the config
 	// file, from JENKINS_CLI_READ_ONLY, or temporarily overridden via
 	// --allow-writes.
-	ReadOnly bool `yaml:"read_only,omitempty"`
+	ReadOnly bool `yaml:"read_only,omitempty" config:"defaults.read_only"`
 }
 
 // Secrets holds credentials observed in non-file layers. Empty fields mean the
 // secret was not supplied via flags/env/.env and must come from the keychain.
 type Secrets struct {
-	Password string
-	Token    string
+	Password string `config:"secret.password"`
+	Token    string `config:"secret.token"`
 }
 
 // Resolved is the outcome of Load: the merged Config plus provenance and any
@@ -114,9 +118,9 @@ func (r *Resolved) ContextSelectedExplicitly() bool {
 
 // Field keys used for layer maps and provenance tracking.
 const (
-	fieldCredentialURL = "auth.credential_url"
-	fieldServer        = "server"
-	fieldAuthScheme    = "auth.scheme"
+	fieldCredentialURL = kit.KeyCredentialURL
+	fieldServer        = kit.KeyServer
+	fieldAuthScheme    = kit.KeyAuthScheme
 	fieldAuthUsername  = "auth.username"
 	fieldFormat        = "defaults.format"
 	fieldTimeout       = "defaults.timeout"
@@ -138,65 +142,3 @@ const (
 	FieldMaxRetries    = fieldMaxRetries
 	FieldReadOnly      = fieldReadOnly
 )
-
-// defaultLayer returns the built-in defaults as a layer map.
-func defaultLayer() map[string]string {
-	return map[string]string{
-		fieldAuthScheme: SchemeToken,
-		fieldFormat:     constants.DefaultFormat,
-		fieldTimeout:    constants.DefaultTimeout.String(),
-		fieldMaxRetries: strconv.Itoa(constants.DefaultMaxRetries),
-	}
-}
-
-// configFromMap builds a Config from a fully merged layer map.
-func configFromMap(m map[string]string) Config {
-	return Config{
-		BaseURL: m[fieldServer],
-		Auth: AuthConfig{
-			CredentialURL: m[fieldCredentialURL],
-			Scheme:        m[fieldAuthScheme],
-			Username:      m[fieldAuthUsername],
-		},
-		Defaults: Defaults{
-			Format:     m[fieldFormat],
-			Timeout:    durationOr(m[fieldTimeout], constants.DefaultTimeout),
-			MaxRetries: atoiOr(m[fieldMaxRetries], constants.DefaultMaxRetries),
-			ReadOnly:   boolOr(m[fieldReadOnly], false),
-		},
-	}
-}
-
-// boolOr parses a flag-style truthy string. "1", "true", "yes", "on" count as
-// true; everything else (including empty) yields the fallback.
-func boolOr(s string, fallback bool) bool {
-	switch strings.ToLower(strings.TrimSpace(s)) {
-	case "":
-		return fallback
-	case "1", "true", "yes", "on":
-		return true
-	case "0", "false", "no", "off":
-		return false
-	}
-	return fallback
-}
-
-func atoiOr(s string, fallback int) int {
-	if s == "" {
-		return fallback
-	}
-	if n, err := strconv.Atoi(s); err == nil {
-		return n
-	}
-	return fallback
-}
-
-func durationOr(s string, fallback time.Duration) time.Duration {
-	if s == "" {
-		return fallback
-	}
-	if d, err := time.ParseDuration(s); err == nil {
-		return d
-	}
-	return fallback
-}

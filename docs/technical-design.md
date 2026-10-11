@@ -25,11 +25,11 @@ cmd/jenkins-cli  →  internal/app  →  pkg/apiclient  →  pkg/transport
 
 Cross-cutting packages — `errors`, `output`, `config`, `auth`, `timeutil`,
 `cliflags`, `constants` — are used across the layers. `output`, `cliflags`,
-`update`, the credential store, credential resolution, and the code behind
-`pkg/errors` and `pkg/transport` come from
+`update`, the credential store, credential resolution, the configuration
+engine, and the code behind `pkg/errors` and `pkg/transport` come from
 [agent-cli-kit](https://github.com/AngelMsger/agent-cli-kit), shared by every
 CLI in the family; jenkins-cli supplies its own hints, User-Agent, keychain
-service name, auth schemes and release repository.
+service name, auth schemes, settings table and release repository.
 
 ## Command layer (`internal/app`)
 
@@ -137,7 +137,11 @@ Layered resolution, highest precedence first: **flags → env (`JENKINS_*`) →
 tracked so `config show` can report where a value came from. Secrets (tokens,
 passwords) are never written to the YAML file. The file supports multiple
 kubectl-style named **contexts** with a `current_context`; `--use-context` and
-`JENKINS_CONTEXT` override per invocation.
+`JENKINS_CONTEXT` override per invocation. `internal/config` registers the
+settings (keys, `JENKINS_*` variables, defaults), the file location and the
+command wording with agent-cli-kit's `config` package, which owns the layering,
+context selection, the atomic file write and set-context planning. jenkins-cli
+keeps the YAML shape structs that define the file format.
 
 ## Auth (`internal/auth`)
 
@@ -211,8 +215,9 @@ from `--help`; CI fails if the committed output is stale.
 
 ## Team service setup and login persistence
 
-`internal/config/setup.go` owns offline service-field validation, acquisition
-links and the pure `PlanServiceContext` merge used by execution and dry-run.
+`internal/config/setup.go` owns the acquisition links and wraps the shared
+offline service-field validation and the pure `PlanServiceContext` merge used by
+execution and dry-run.
 `LoadOptions.Setup` selects the requested destination even when it is new and
 filters personal environment fields before credential-based scheme inference.
 Ordinary runtime precedence and transient environment secrets remain supported.

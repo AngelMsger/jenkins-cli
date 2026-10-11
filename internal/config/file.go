@@ -1,12 +1,9 @@
 package config
 
 import (
-	"os"
-	"path/filepath"
-	"strings"
+	"time"
 
-	"github.com/angelmsger/jenkins-cli/pkg/constants"
-	"gopkg.in/yaml.v3"
+	kit "github.com/angelmsger/agent-cli-kit/config"
 )
 
 // authShape / defaultsShape / contextShape are the on-disk YAML building
@@ -38,84 +35,39 @@ type fileShape struct {
 }
 
 // File is the parsed config file: a set of named contexts plus the shared
-// runtime defaults and the name of the current context.
-type File struct {
-	CurrentContext string
-	Contexts       []NamedContext
-	Defaults       Defaults
-}
-
-// Context returns the context whose name matches, case-insensitively. The
-// returned struct carries the canonical (as-stored) name; callers that intend
-// to persist a reference to the context must use the returned NamedContext.Name.
-func (f File) Context(name string) (NamedContext, bool) {
-	for _, c := range f.Contexts {
-		if strings.EqualFold(c.Name, name) {
-			return c, true
-		}
-	}
-	return NamedContext{}, false
-}
-
-// ContextNames returns every context name, in file order.
-func (f File) ContextNames() []string {
-	names := make([]string, len(f.Contexts))
-	for i, c := range f.Contexts {
-		names[i] = c.Name
-	}
-	return names
-}
-
-// Upsert inserts or replaces a context by (case-insensitive) name, preserving
-// file order for existing entries.
-func (f *File) Upsert(nc NamedContext) {
-	for i, c := range f.Contexts {
-		if strings.EqualFold(c.Name, nc.Name) {
-			f.Contexts[i] = nc
-			return
-		}
-	}
-	f.Contexts = append(f.Contexts, nc)
-}
+// runtime defaults and the name of the current context. Context looks a name
+// up case-insensitively and returns the stored spelling; Upsert and Remove
+// match names the same way.
+type File = kit.File[NamedContext, Defaults]
 
 // DefaultConfigDir returns the per-user config directory
 // (~/.angelmsger/jenkins).
-func DefaultConfigDir() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(home, constants.ConfigParentDirName, constants.ConfigDirName), nil
-}
+func DefaultConfigDir() (string, error) { return kit.DefaultDir() }
 
 // ResolveConfigDir picks the config directory to use when --config was not
 // supplied.
-func ResolveConfigDir() (string, error) {
-	return DefaultConfigDir()
-}
+func ResolveConfigDir() (string, error) { return kit.ResolveDir() }
 
 // ConfigFilePath returns the YAML config file path inside dir.
-func ConfigFilePath(dir string) string {
-	return filepath.Join(dir, constants.ConfigFileName)
-}
+func ConfigFilePath(dir string) string { return kit.FilePath(dir) }
 
 // ReadFile reads and parses the config file in dir. The bool return is false
 // when the file does not exist.
 func ReadFile(dir string) (File, bool, error) {
-	raw, err := os.ReadFile(ConfigFilePath(dir))
-	if err != nil {
-		if os.IsNotExist(err) {
-			return File{}, false, nil
-		}
-		return File{}, false, err
-	}
 	var fs fileShape
-	if err := yaml.Unmarshal(raw, &fs); err != nil {
+	if ok, err := kit.ReadFile(dir, &fs); !ok || err != nil {
 		return File{}, false, err
 	}
+	// Missing defaults stay zero; the default layer fills them during Load.
+	timeout, _ := time.ParseDuration(fs.Defaults.Timeout)
 	f := File{
 		CurrentContext: fs.CurrentContext,
-		Defaults:       defaultsFromShape(fs.Defaults),
+		Defaults: Defaults{
+			Format:     fs.Defaults.Format,
+			Timeout:    timeout,
+			MaxRetries: fs.Defaults.MaxRetries,
+			ReadOnly:   fs.Defaults.ReadOnly,
+		},
 	}
 	for _, cs := range fs.Contexts {
 		f.Contexts = append(f.Contexts, NamedContext{
@@ -128,13 +80,20 @@ func ReadFile(dir string) (File, bool, error) {
 }
 
 // WriteFile persists a File to dir/config.yaml, creating dir with 0700
-// permissions. Secrets are never written here.
+// permissions and replacing the file atomically. Secrets are never written
+// here.
 func WriteFile(dir string, f File) error {
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return err
+	fs := fileShape{
+		CurrentContext: f.CurrentContext,
+		Defaults: defaultsShape{
+			Format:     f.Defaults.Format,
+			MaxRetries: f.Defaults.MaxRetries,
+			ReadOnly:   f.Defaults.ReadOnly,
+		},
 	}
-	var fs fileShape
-	fs.CurrentContext = f.CurrentContext
+	if f.Defaults.Timeout > 0 {
+		fs.Defaults.Timeout = f.Defaults.Timeout.String()
+	}
 	for _, c := range f.Contexts {
 		fs.Contexts = append(fs.Contexts, contextShape{
 			Name:   c.Name,
@@ -142,50 +101,5 @@ func WriteFile(dir string, f File) error {
 			Auth:   authShape{Scheme: c.Auth.Scheme, Username: c.Auth.Username, CredentialURL: c.Auth.CredentialURL},
 		})
 	}
-	fs.Defaults.Format = f.Defaults.Format
-	if f.Defaults.Timeout > 0 {
-		fs.Defaults.Timeout = f.Defaults.Timeout.String()
-	}
-	fs.Defaults.MaxRetries = f.Defaults.MaxRetries
-	fs.Defaults.ReadOnly = f.Defaults.ReadOnly
-
-	out, err := yaml.Marshal(&fs)
-	if err != nil {
-		return err
-	}
-	// Replace atomically so a failed write does not truncate an existing config.
-	tmp, err := os.CreateTemp(dir, ".config-*.tmp")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(tmp.Name())
-	if err := tmp.Chmod(0o600); err != nil {
-		_ = tmp.Close()
-		return err
-	}
-	if _, err := tmp.Write(out); err != nil {
-		_ = tmp.Close()
-		return err
-	}
-	if err := tmp.Close(); err != nil {
-		return err
-	}
-	return os.Rename(tmp.Name(), ConfigFilePath(dir))
-}
-
-// defaultsFromShape converts the on-disk defaults block into a Defaults value.
-// Missing fields stay zero; the default layer fills them during Load.
-func defaultsFromShape(ds defaultsShape) Defaults {
-	return Defaults{
-		Format:     ds.Format,
-		Timeout:    durationOr(ds.Timeout, 0),
-		MaxRetries: ds.MaxRetries,
-		ReadOnly:   ds.ReadOnly,
-	}
-}
-
-func put(m map[string]string, key, val string) {
-	if val != "" {
-		m[key] = val
-	}
+	return kit.WriteFile(dir, &fs)
 }

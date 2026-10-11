@@ -37,11 +37,13 @@ architecture of the sibling `confluence-cli` / `bitbucket-cli` / `openobserve-cl
   and installs jenkins-cli's hints (`hints.go`).
 - `pkg/transport` — re-exports the shared retrying HTTP client with
   jenkins-cli's User-Agent.
-- `internal/config` — layered config and named contexts.
+- `internal/config` — registers jenkins-cli's settings, file location and
+  wording with the shared config engine, and keeps the YAML shape of
+  `config.yaml`.
 - `internal/auth` — declares jenkins-cli's auth schemes and recovery wording
   and maps config onto the shared resolver.
-- Output rendering, argv correction, the update check, the credential store and
-  credential resolution come from [agent-cli-kit](https://github.com/AngelMsger/agent-cli-kit), shared
+- Output rendering, argv correction, the update check, the credential store,
+  credential resolution and the configuration engine come from [agent-cli-kit](https://github.com/AngelMsger/agent-cli-kit), shared
   by every CLI in the family. Fix bugs in those there, not here.
 - `pkg/timeutil` — Jenkins epoch-millis → ISO instant + relative phrase.
 - `skills/jenkins` — the companion Skill, embedded into the binary.
