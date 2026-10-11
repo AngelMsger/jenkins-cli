@@ -33,9 +33,14 @@ architecture of the sibling `confluence-cli` / `bitbucket-cli` / `openobserve-cl
   resource (jobs, builds, console, pipeline, tests, changes, queue, writes);
   `paths.go` maps human job paths and build refs to Jenkins URLs; `models.go`
   normalizes Jenkins JSON (color → status); `readonly.go` blocks the writes.
-- `pkg/errors` — the `CLIError` model + exit-code map (0–11).
-- `internal/output` — JSON / table / ndjson rendering, `{items,next,has_more}`.
+- `pkg/errors` — re-exports the shared `CLIError` model and exit-code map (0–11)
+  and installs jenkins-cli's hints (`hints.go`).
+- `pkg/transport` — re-exports the shared retrying HTTP client with
+  jenkins-cli's User-Agent.
 - `internal/config`, `internal/auth` — layered config + keychain credentials.
+- Output rendering, argv correction, the update check and the credential store
+  come from [agent-cli-kit](https://github.com/AngelMsger/agent-cli-kit), shared
+  by every CLI in the family. Fix bugs in those there, not here.
 - `pkg/timeutil` — Jenkins epoch-millis → ISO instant + relative phrase.
 - `skills/jenkins` — the companion Skill, embedded into the binary.
 
