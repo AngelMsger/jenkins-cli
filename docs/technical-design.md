@@ -24,7 +24,12 @@ cmd/jenkins-cli  →  internal/app  →  pkg/apiclient  →  pkg/transport
 - `pkg/transport` is a flavor-agnostic retrying HTTP client.
 
 Cross-cutting packages — `errors`, `output`, `config`, `auth`, `timeutil`,
-`cliflags`, `constants` — are used across the layers.
+`cliflags`, `constants` — are used across the layers. `output`, `cliflags`,
+`update`, the credential store, and the code behind `pkg/errors` and
+`pkg/transport` come from
+[agent-cli-kit](https://github.com/AngelMsger/agent-cli-kit), shared by every
+CLI in the family; jenkins-cli supplies its own hints, User-Agent, keychain
+service name and release repository.
 
 ## Command layer (`internal/app`)
 
@@ -87,17 +92,20 @@ requested job/build in their recovery steps.
 
 ## Transport (`pkg/transport`)
 
-A thin `Client` that applies request decorators (auth, user-agent) and retries
+A re-export of agent-cli-kit's `transport` whose `New` defaults the User-Agent
+to `jenkins-cli/<version>`. A thin `Client` that applies request decorators (auth, user-agent) and retries
 transient failures. Retries are limited to idempotent methods (GET/HEAD); a
 `Retry-After` header on 429/503 takes precedence over linear backoff. `Doer` is
 an interface so tests inject fakes.
 
 ## Error model (`pkg/errors`)
 
-Every failure is a `*CLIError` with `Category`, a stable `Code`, `Message`,
+A re-export of agent-cli-kit's `errors`; `hints.go` holds jenkins-cli's default
+guidance and is installed with `SetGuidance` when the package loads. Every
+failure is a `*CLIError` with `Category`, a stable `Code`, `Message`,
 `Hint`, `NextSteps`, `Retryable`, `HTTPStatus` and an optional structured
 `Recovery`. The category drives two
-deterministic mappings: the **exit code** (`codes.go`, 0–11) and the **default
+deterministic mappings: the **exit code** (0–11) and the **default
 guidance** (`hints.go`). `FromHTTPStatus` classifies HTTP statuses. This is the
 "errors as navigation" contract — every failure tells an agent the next command
 to run. `Recovery` describes an environment change, such as retrying the same
@@ -105,7 +113,7 @@ command in host scope; it is deliberately separate from `Retryable`, which
 means a retry in the current environment may work. `doctor` exposes the same
 distinction through per-check `status` and optional `recovery_scope`.
 
-## Output (`internal/output`)
+## Output (agent-cli-kit `output`)
 
 `Emit` and `EmitList` render any value as `json` (default), `table`, or `ndjson`.
 JSON lists use the `{items, next, has_more}` envelope. NDJSON writes only rows
@@ -137,9 +145,11 @@ Jenkins authenticates API requests with HTTP Basic. Two schemes, identical on th
 wire (`Basic base64(username:secret)`): `token` (username + API token,
 recommended) and `basic` (username + password). `Resolve` produces a validated
 `Credential` from config + secrets, loading the secret from the keychain when not
-supplied via flags/env. The `Store` prefers the OS keychain (`go-keyring`) and
+supplied via flags/env. The `Store` (agent-cli-kit's `credstore`, under the
+`jenkins-cli` keychain service) prefers the OS keychain (`go-keyring`) and
 falls back to a per-user DPAPI-encrypted file on Windows or a `0600` JSON file
-on macOS/Linux. A credential becomes a `transport.Decorator`
+on macOS/Linux. On macOS it first checks for a default keychain, so a sandbox
+without one never raises the "Reset To Defaults" dialog. A credential becomes a `transport.Decorator`
 that authenticates every request. Store access errors are preserved rather than
 collapsed into "missing": `CREDENTIAL_STORE_INACCESSIBLE` and
 `CREDENTIAL_NOT_VISIBLE_OR_MISSING` carry a host-scope recovery instruction so

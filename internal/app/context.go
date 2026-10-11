@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/angelmsger/agent-cli-kit/output"
 	"github.com/angelmsger/jenkins-cli/internal/auth"
 	"github.com/angelmsger/jenkins-cli/internal/config"
-	"github.com/angelmsger/jenkins-cli/internal/output"
 	"github.com/angelmsger/jenkins-cli/pkg/apiclient"
 	cerrors "github.com/angelmsger/jenkins-cli/pkg/errors"
 	"github.com/angelmsger/jenkins-cli/pkg/transport"

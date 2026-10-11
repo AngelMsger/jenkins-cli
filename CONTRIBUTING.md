@@ -31,16 +31,20 @@ cmd/gen-docs          generates docs/cli/ from the cobra tree
 internal/app          one file per noun (job, build, queue, auth, config,
                       doctor, skill) + root wiring and the shared appState
 pkg/apiclient         the Jenkins HTTP surface and models
-pkg/transport         retrying HTTP client with request decorators
-pkg/errors            the CLIError model and exit-code map (0–11)
-internal/output       JSON / table / ndjson rendering, {items,next,has_more}
+pkg/transport         the shared HTTP client with jenkins-cli's User-Agent
+pkg/errors            the shared CLIError model, plus jenkins-cli's hints
 internal/config       layered configuration + named contexts
-internal/auth         credential model + OS keychain storage
+internal/auth         credential model; secrets live in the shared credstore
 pkg/timeutil          Jenkins epoch-millis → ISO instant + relative phrase
-internal/cliflags     argv normalization (LLM slip correction)
 pkg/constants         app name, defaults, build-time version vars
 skills/jenkins    the companion Skill, embedded into the binary
 ```
+
+Output rendering, argv normalization, the release check, the credential store,
+and the code behind `pkg/errors` and `pkg/transport` come from
+[agent-cli-kit](https://github.com/AngelMsger/agent-cli-kit), which every CLI in
+the family shares. A fix to one of those belongs there; this repo then bumps the
+version in `go.mod`.
 
 See [docs/technical-design.md](docs/technical-design.md) for how these fit
 together.
@@ -52,7 +56,8 @@ together.
   stderr; never print anything else to stdout.
 - **Structured errors.** Every user-facing failure is a `*errors.CLIError` with a
   `category`, a stable `code`, a `hint` and `next_steps`. The category maps to an
-  exit code in `pkg/errors/codes.go`.
+  exit code in agent-cli-kit's `errors/codes.go`; jenkins-cli's hints live in
+  `pkg/errors/hints.go`.
 - **No dead-end inputs.** Every identifier a command accepts must be discoverable
   through another command (a job path from `job list` / `job get`, a build number
   from `build list`, a queue id from `queue list`). When you add an input, also

@@ -4,41 +4,24 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/angelmsger/agent-cli-kit/credstore"
 	"github.com/angelmsger/jenkins-cli/internal/config"
+	"github.com/angelmsger/jenkins-cli/pkg/constants"
 	cerrors "github.com/angelmsger/jenkins-cli/pkg/errors"
 	"github.com/zalando/go-keyring"
 )
 
+// failingKeyring is a keychain backend whose every call fails with err.
 type failingKeyring struct{ err error }
 
 func (f failingKeyring) Get(string, string) (string, error) { return "", f.err }
 func (f failingKeyring) Set(string, string, string) error   { return f.err }
 func (f failingKeyring) Delete(string, string) error        { return f.err }
 
-func TestStoreDistinguishesInaccessibleFromMissing(t *testing.T) {
-	t.Parallel()
-	accessErr := errors.New("keychain interaction is not allowed")
-	s := newStoreWithKeyring(t.TempDir(), failingKeyring{err: accessErr})
-	_, err := s.Load("acct")
-	var storeErr *StoreAccessError
-	if !errors.As(err, &storeErr) || storeErr.Backend != BackendKeychain {
-		t.Fatalf("Load() error = %v, want keychain StoreAccessError", err)
-	}
-	if !errors.Is(err, accessErr) {
-		t.Fatalf("Load() should preserve keychain cause: %v", err)
-	}
-}
-
-func TestStoreUsesFileWhenKeychainIsInaccessible(t *testing.T) {
-	t.Parallel()
-	s := newStoreWithKeyring(t.TempDir(), failingKeyring{err: errors.New("locked")})
-	if err := s.fileSave("acct", "fallback-secret"); err != nil {
-		t.Fatal(err)
-	}
-	got, err := s.Load("acct")
-	if err != nil || got != "fallback-secret" {
-		t.Fatalf("Load() = %q, %v; want file fallback", got, err)
-	}
+// newStoreWithKeyring returns jenkins-cli's Store over a substitute keychain
+// backend. The store's own behavior is tested in agent-cli-kit/credstore.
+func newStoreWithKeyring(dir string, backend credstore.Backend) *Store {
+	return credstore.NewStoreWithBackend(dir, constants.KeychainService, backend)
 }
 
 func TestResolveCredentialRecovery(t *testing.T) {
