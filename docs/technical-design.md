@@ -25,11 +25,11 @@ cmd/jenkins-cli  →  internal/app  →  pkg/apiclient  →  pkg/transport
 
 Cross-cutting packages — `errors`, `output`, `config`, `auth`, `timeutil`,
 `cliflags`, `constants` — are used across the layers. `output`, `cliflags`,
-`update`, the credential store, and the code behind `pkg/errors` and
-`pkg/transport` come from
+`update`, the credential store, credential resolution, the configuration
+engine, and the code behind `pkg/errors` and `pkg/transport` come from
 [agent-cli-kit](https://github.com/AngelMsger/agent-cli-kit), shared by every
 CLI in the family; jenkins-cli supplies its own hints, User-Agent, keychain
-service name and release repository.
+service name, auth schemes, settings table and release repository.
 
 ## Command layer (`internal/app`)
 
@@ -137,13 +137,19 @@ Layered resolution, highest precedence first: **flags → env (`JENKINS_*`) →
 tracked so `config show` can report where a value came from. Secrets (tokens,
 passwords) are never written to the YAML file. The file supports multiple
 kubectl-style named **contexts** with a `current_context`; `--use-context` and
-`JENKINS_CONTEXT` override per invocation.
+`JENKINS_CONTEXT` override per invocation. `internal/config` registers the
+settings (keys, `JENKINS_*` variables, defaults), the file location and the
+command wording with agent-cli-kit's `config` package, which owns the layering,
+context selection, the atomic file write and set-context planning. jenkins-cli
+keeps the YAML shape structs that define the file format.
 
 ## Auth (`internal/auth`)
 
 Jenkins authenticates API requests with HTTP Basic. Two schemes, identical on the
 wire (`Basic base64(username:secret)`): `token` (username + API token,
-recommended) and `basic` (username + password). `Resolve` produces a validated
+recommended) and `basic` (username + password). `internal/auth` registers
+them with agent-cli-kit's `auth` package, which owns the credential model, the
+header encoding and the recovery errors. `Resolve` produces a validated
 `Credential` from config + secrets, loading the secret from the keychain when not
 supplied via flags/env. The `Store` (agent-cli-kit's `credstore`, under the
 `jenkins-cli` keychain service) prefers the OS keychain (`go-keyring`) and
@@ -160,8 +166,10 @@ Jenkins share one secret rather than holding a copy each. `config init` saves
 under the normalized server URL and never deletes an entry: respelling a
 context's URL or moving it to another server leaves every secret another
 context still resolves, at the cost of a harmless orphan when the old server
-is no longer configured. `auth logout` is the only command that removes a
-secret, and it removes the shared entry for that server and scheme.
+is no longer configured. `auth logout` removes the shared entry for the
+active context's server and scheme. `config delete-context` removes the
+deleted context's entry only when no remaining context resolves the same
+account, and only after the config file is written.
 
 ## Time (`pkg/timeutil`)
 
@@ -209,8 +217,9 @@ from `--help`; CI fails if the committed output is stale.
 
 ## Team service setup and login persistence
 
-`internal/config/setup.go` owns offline service-field validation, acquisition
-links and the pure `PlanServiceContext` merge used by execution and dry-run.
+`internal/config/setup.go` owns the acquisition links and wraps the shared
+offline service-field validation and the pure `PlanServiceContext` merge used by
+execution and dry-run.
 `LoadOptions.Setup` selects the requested destination even when it is new and
 filters personal environment fields before credential-based scheme inference.
 Ordinary runtime precedence and transient environment secrets remain supported.

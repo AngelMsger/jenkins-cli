@@ -11,12 +11,15 @@ import (
 	cerrors "github.com/angelmsger/jenkins-cli/pkg/errors"
 )
 
+// envNames lists every variable the schema binds, plus the context selector.
+var envNames = []string{"JENKINS_URL", "JENKINS_CREDENTIAL_URL", "JENKINS_AUTH_SCHEME", "JENKINS_USER",
+	"JENKINS_FORMAT", "JENKINS_CLI_READ_ONLY", "JENKINS_TOKEN", "JENKINS_PASSWORD", "JENKINS_CONTEXT"}
+
 func cleanSetupEnv(t *testing.T) {
 	t.Helper()
-	for key := range envBindings {
+	for _, key := range envNames {
 		t.Setenv(key, "")
 	}
-	t.Setenv("JENKINS_CONTEXT", "")
 }
 func setupFixture() NamedContext {
 	return NamedContext{Name: "team", BaseURL: "https://service.example.test/deploy", Auth: AuthConfig{Scheme: "token", Username: "PersonalUser", CredentialURL: "https://help.example.test/tokens"}}

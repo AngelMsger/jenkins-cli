@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/angelmsger/jenkins-cli/internal/config"
+	cerrors "github.com/angelmsger/jenkins-cli/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -47,6 +48,35 @@ func TestResolveInitTarget_ExplicitContextSkipsPrompt(t *testing.T) {
 		}
 		if target != "prod" || prefill != nil || replaceAll {
 			t.Fatalf("explicit new: got (%q, %v, %v)", target, prefill, replaceAll)
+		}
+	})
+
+	t.Run("new name is saved normalized", func(t *testing.T) {
+		s := &appState{}
+		cmd := initCmdForTest()
+		_ = cmd.Flags().Set("context", " Prod ")
+		target, prefill, _, err := s.resolveInitTarget(cmd, file, " Prod ")
+		if err != nil || target != "prod" || prefill != nil {
+			t.Fatalf("explicit new: got (%q, %v, %v)", target, prefill, err)
+		}
+	})
+
+	t.Run("a padded existing name edits that context", func(t *testing.T) {
+		s := &appState{}
+		cmd := initCmdForTest()
+		_ = cmd.Flags().Set("context", " Default ")
+		target, prefill, _, err := s.resolveInitTarget(cmd, file, " Default ")
+		if err != nil || target != "default" || prefill == nil || prefill.BaseURL != "http://a" {
+			t.Fatalf("padded existing: got (%q, %+v, %v)", target, prefill, err)
+		}
+	})
+
+	t.Run("blank name", func(t *testing.T) {
+		s := &appState{}
+		cmd := initCmdForTest()
+		_ = cmd.Flags().Set("context", "  ")
+		if _, _, _, err := s.resolveInitTarget(cmd, file, "  "); err == nil || cerrors.AsCLIError(err).Code != "CTX_NAME_EMPTY" {
+			t.Fatalf("blank name: %v", err)
 		}
 	})
 

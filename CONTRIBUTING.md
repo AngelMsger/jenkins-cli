@@ -33,15 +33,16 @@ internal/app          one file per noun (job, build, queue, auth, config,
 pkg/apiclient         the Jenkins HTTP surface and models
 pkg/transport         the shared HTTP client with jenkins-cli's User-Agent
 pkg/errors            the shared CLIError model, plus jenkins-cli's hints
-internal/config       layered configuration + named contexts
-internal/auth         credential model; secrets live in the shared credstore
+internal/config       jenkins-cli's settings and file shape on the shared engine
+internal/auth         jenkins-cli's auth schemes on top of the shared resolver
 pkg/timeutil          Jenkins epoch-millis → ISO instant + relative phrase
 pkg/constants         app name, defaults, build-time version vars
 skills/jenkins    the companion Skill, embedded into the binary
 ```
 
 Output rendering, argv normalization, the release check, the credential store,
-and the code behind `pkg/errors` and `pkg/transport` come from
+credential resolution, the configuration engine, and the code behind `pkg/errors`
+and `pkg/transport` come from
 [agent-cli-kit](https://github.com/AngelMsger/agent-cli-kit), which every CLI in
 the family shares. A fix to one of those belongs there; this repo then bumps the
 version in `go.mod`.

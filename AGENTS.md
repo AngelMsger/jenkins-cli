@@ -37,9 +37,13 @@ architecture of the sibling `confluence-cli` / `bitbucket-cli` / `openobserve-cl
   and installs jenkins-cli's hints (`hints.go`).
 - `pkg/transport` — re-exports the shared retrying HTTP client with
   jenkins-cli's User-Agent.
-- `internal/config`, `internal/auth` — layered config + keychain credentials.
-- Output rendering, argv correction, the update check and the credential store
-  come from [agent-cli-kit](https://github.com/AngelMsger/agent-cli-kit), shared
+- `internal/config` — registers jenkins-cli's settings, file location and
+  wording with the shared config engine, and keeps the YAML shape of
+  `config.yaml`.
+- `internal/auth` — declares jenkins-cli's auth schemes and recovery wording
+  and maps config onto the shared resolver.
+- Output rendering, argv correction, the update check, the credential store,
+  credential resolution and the configuration engine come from [agent-cli-kit](https://github.com/AngelMsger/agent-cli-kit), shared
   by every CLI in the family. Fix bugs in those there, not here.
 - `pkg/timeutil` — Jenkins epoch-millis → ISO instant + relative phrase.
 - `skills/jenkins` — the companion Skill, embedded into the binary.
@@ -119,13 +123,13 @@ credential resolution. Native self-configuration follows the existing read-only 
 A stored secret is keyed by `<host>:<scheme>` (`auth.AccountKey`), not by
 context: every context on one Jenkins shares it, including a team preset and
 the personal context `auth reuse` associates with it. `config init` normalizes
-the server URL and only ever saves a secret; there is no orphan cleanup and no
-`config delete-context`, so `auth logout` is the single path that removes one.
-Keep it that way unless cleanup is designed in: forget a secret only when no
-remaining context resolves the same account, and only after the config write
-(the family reference is `forgetUnusedCredential` in `wecom-calendar-cli`).
-`internal/app/config_credentials_test.go` pins that an edit which merely
-respells the URL, or moves a context to another server, keeps every credential
-still in use. A test that runs the command tree must call `keyring.MockInit()`
+the server URL and only ever saves a secret; it has no orphan cleanup.
+`config delete-context` and `auth logout` are the paths that remove one.
+`delete-context` forgets a secret only when no remaining context resolves the
+same account (`forgetUnusedCredential`, as in the Atlassian CLIs), and only
+after the config write. `internal/app/config_credentials_test.go` pins that an
+edit which merely respells the URL, or moves a context to another server, keeps
+every credential still in use, and that `delete-context` keeps a secret another
+context resolves. A test that runs the command tree must call `keyring.MockInit()`
 and clear `JENKINS_*` first, so it never reaches a developer's keychain or
 environment.

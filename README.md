@@ -181,7 +181,7 @@ export JENKINS_TOKEN='11abc…your-api-token'   # …or JENKINS_PASSWORD for bas
 | `build stop` | abort a running build (write) |
 | `queue list` / `get` / `cancel` | inspect the build queue; cancel a queued build (write) |
 | `auth login` / `status` / `logout` | store credentials, check identity, sign out |
-| `config init` / `show` / `contexts` / `use-context` | setup, inspect, manage servers |
+| `config init` / `show` / `get-contexts` / `use-context` / `delete-context` | setup, inspect, manage servers |
 | `doctor` | check configuration, credentials and connectivity |
 | `skill install` / `uninstall` | deploy or remove the embedded companion Skill |
 | `version` | print version and build information |
@@ -203,12 +203,15 @@ a new one, or **replace** everything; pass `config init --context prod` to skip
 that prompt. Then:
 
 ```bash
-jenkins-cli config contexts                 # list contexts, current marked
+jenkins-cli config get-contexts             # list contexts, current marked
 jenkins-cli config use-context prod         # switch the current context
 jenkins-cli --use-context prod job list     # override for one command
+jenkins-cli config delete-context staging   # remove a context and its unused secret
 ```
 
-`JENKINS_CONTEXT` overrides the current context via the environment.
+`JENKINS_CONTEXT` overrides the current context via the environment. New
+context names are saved trimmed and in lower case; existing names keep their
+spelling and match in any case.
 
 ## Errors and exit codes
 
