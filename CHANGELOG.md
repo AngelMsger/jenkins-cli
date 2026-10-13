@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `build get` reports the Git commit the job built as `revision` (`sha`,
+  `branch` as Jenkins names it, `remote`), from the Git plugin's build data.
+  When a build checked out several repositories, such as a Pipeline shared
+  library, the job's own Git remote picks one; only freestyle and multibranch
+  jobs declare it, so for other jobs `revision` is left out rather than
+  guessed. It is also absent when the build has no Git data.
+- Update the companion Skill to `0.2.7` for `revision`.
+
 ## [0.11.0] - 2026-10-12
 
 ### Added

@@ -48,7 +48,8 @@ type Client interface {
 	JobBuilds(ctx context.Context, path string, limit int) ([]Build, error)
 
 	// GetBuild returns one build. ref is a number or a permalink keyword
-	// (last, lastSuccessful, lastFailed, lastCompleted, lastStable).
+	// (last, lastSuccessful, lastFailed, lastCompleted, lastStable). Its
+	// Revision is the Git commit the job built, when Jenkins can tell.
 	GetBuild(ctx context.Context, path, ref string) (*Build, error)
 	// Console returns a slice of a build's console output starting at byte
 	// offset start (0 = from the top).

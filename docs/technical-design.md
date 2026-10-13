@@ -83,6 +83,12 @@ implementation. One file per resource: `jobs.go`, `builds.go`, `console.go`,
 
 Read methods shape their responses with Jenkins' `?tree=` parameter so the
 default output stays a compact, high-signal map rather than a full object dump.
+`GetBuild` adds the commit the job built (`revision`) from the Git plugin's
+BuildData actions, one per repository checked out. With several (a Pipeline
+shared library, extra checkouts) it reads the job's own Git remote in one more
+request and takes the last checkout of it; when the job declares no remote
+(only freestyle and multibranch jobs do) or none match, `revision` is left out
+rather than guessed.
 Queue items preserve the job `url` and add `cancelled` plus an optional
 `executable` using the existing `BuildRef` number/URL shape. Trigger-to-build
 handoff follows that executable, never the moving latest-build selector.

@@ -72,6 +72,7 @@ check "job get params"  '"BRANCH"'             -- run job get app
 check "build list"      '"number": 7'          -- run build list app
 check "build get"       '"result": "FAILURE"'  -- run build get app lastFailed
 check "build get cause" '"user_id": "alice"'   -- run build get app lastFailed
+check "build get commit" '"sha": "0123456789abcdef0123456789abcdef01234567"' -- run build get app lastFailed
 check "build log"       'FAIL: TestThing'      -- run build log app lastFailed
 check "build log follow" 'Build step failed'   -- run build log app 7 --follow
 check "build stages"    '"name": "Test"'       -- run build stages app lastFailed

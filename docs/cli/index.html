@@ -230,11 +230,12 @@ message and affected paths. Works for both freestyle and pipeline jobs.</p>
 
     <section class="cmd" id="jenkins-cli-build-get">
       <h2>jenkins-cli build get</h2>
-      <p class="short">Get one build: result, timing, trigger cause</p>
+      <p class="short">Get one build: result, timing, trigger cause, commit</p>
       <pre>jenkins-cli build get &lt;path&gt; [ref]</pre>
       <p class="long">Returns a build&#39;s result and status, when it started (absolute and
 relative) and how long it ran, which node it ran on, what triggered it,
-and any build parameters. ref defaults to the latest build.</p>
+any build parameters, and the Git commit the job built (revision).
+ref defaults to the latest build.</p>
 
 
     </section>
