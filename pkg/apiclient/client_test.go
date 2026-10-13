@@ -112,6 +112,94 @@ func TestGetBuildRefResolution(t *testing.T) {
 	}
 }
 
+func TestGetBuildRevision(t *testing.T) {
+	const (
+		app = "ssh://git@git.example.com/team/app.git"
+		lib = "https://git.example.com/team/pipeline-lib.git"
+	)
+	checkout := func(sha, branch, remote string) string {
+		return `{"_class":"hudson.plugins.git.util.BuildData","lastBuiltRevision":{"SHA1":"` + sha +
+			`","branch":[{"SHA1":"` + sha + `","name":"` + branch + `"}]},"remoteUrls":["` + remote + `"]}`
+	}
+	libFirst := checkout("1111111111111111111111111111111111111111", "master", lib) + "," +
+		checkout("2222222222222222222222222222222222222222", "main", app)
+	cases := []struct {
+		name    string
+		actions string
+		job     string // job api/json body; "" means the job is not read
+		want    *Revision
+	}{
+		{
+			name:    "one checkout",
+			actions: checkout("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "origin/main", app),
+			want:    &Revision{SHA: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Branch: "origin/main", Remote: app},
+		},
+		{
+			name:    "no git data",
+			actions: `{"causes":[{"shortDescription":"Started by timer"}]}`,
+		},
+		{
+			name:    "multibranch source beats a shared library",
+			actions: libFirst,
+			job:     `{"property":[{},{"branch":{"scm":{"userRemoteConfigs":[{"url":"ssh://git@git.example.com/team/app/"}]}}}]}`,
+			want:    &Revision{SHA: "2222222222222222222222222222222222222222", Branch: "main", Remote: app},
+		},
+		{
+			name:    "freestyle scm",
+			actions: libFirst,
+			job:     `{"scm":{"userRemoteConfigs":[{"url":"` + app + `"}]}}`,
+			want:    &Revision{SHA: "2222222222222222222222222222222222222222", Branch: "main", Remote: app},
+		},
+		{
+			name:    "pipeline from scm shows no remote",
+			actions: libFirst,
+			job:     `{"property":[]}`,
+		},
+		{
+			name:    "job unreadable",
+			actions: libFirst,
+			job:     "forbidden",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			jobRead := false
+			client, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case "/job/team/job/app/7/api/json":
+					tree := r.URL.Query().Get("tree")
+					if !strings.Contains(tree, "lastBuiltRevision[SHA1,branch[name]],remoteUrls") || strings.Contains(tree, "buildsByBranchName") {
+						t.Errorf("build tree = %q", tree)
+					}
+					w.Write([]byte(`{"number":7,"result":"SUCCESS","actions":[` + tc.actions + `]}`))
+				case "/job/team/job/app/api/json":
+					jobRead = true
+					if tc.job == "forbidden" {
+						w.WriteHeader(http.StatusForbidden)
+						return
+					}
+					w.Write([]byte(tc.job))
+				default:
+					t.Errorf("unexpected path %q", r.URL.Path)
+				}
+			})
+			b, err := client.GetBuild(context.Background(), "team/app", "7")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if b.Number != 7 {
+				t.Errorf("number = %d", b.Number)
+			}
+			if jobRead != (tc.job != "") {
+				t.Errorf("job read = %v, want %v", jobRead, tc.job != "")
+			}
+			if (b.Revision == nil) != (tc.want == nil) || (b.Revision != nil && *b.Revision != *tc.want) {
+				t.Errorf("revision = %+v, want %+v", b.Revision, tc.want)
+			}
+		})
+	}
+}
+
 func TestConsoleProgressive(t *testing.T) {
 	client, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if !strings.HasSuffix(r.URL.Path, "/logText/progressiveText") {

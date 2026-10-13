@@ -157,6 +157,10 @@ func buildDetail() map[string]any {
 		"actions": []map[string]any{
 			{"causes": []map[string]any{{"shortDescription": "Started by user Alice Dev", "userId": "alice", "userName": "Alice Dev"}}},
 			{"parameters": []map[string]any{{"name": "BRANCH", "value": "main"}}},
+			{"_class": "hudson.plugins.git.util.BuildData",
+				"lastBuiltRevision": map[string]any{"SHA1": "0123456789abcdef0123456789abcdef01234567",
+					"branch": []map[string]any{{"SHA1": "0123456789abcdef0123456789abcdef01234567", "name": "origin/main"}}},
+				"remoteUrls": []string{"https://git.example.com/team/app.git"}},
 		},
 	}
 }

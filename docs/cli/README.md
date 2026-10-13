@@ -22,7 +22,7 @@ is published at <https://angelmsger.github.io/jenkins-cli/cli/>.
 | [`jenkins-cli build`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-build) | Inspect builds: status, logs, stages, tests, changes |
 | [`jenkins-cli build artifacts`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-build-artifacts) | List a build's archived artifacts |
 | [`jenkins-cli build changes`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-build-changes) | Show the SCM commits in a build |
-| [`jenkins-cli build get`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-build-get) | Get one build: result, timing, trigger cause |
+| [`jenkins-cli build get`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-build-get) | Get one build: result, timing, trigger cause, commit |
 | [`jenkins-cli build list`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-build-list) | List a job's recent builds (newest first) |
 | [`jenkins-cli build log`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-build-log) | Print a build's console output |
 | [`jenkins-cli build stages`](https://angelmsger.github.io/jenkins-cli/cli/#jenkins-cli-build-stages) | Show a Pipeline build's stage-by-stage status |

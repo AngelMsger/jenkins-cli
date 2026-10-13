@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-13
+
+### Added
+
+- `build get` reports the Git commit the job built as `revision` (`sha`,
+  `branch` as Jenkins names it, `remote`), from the Git plugin's build data.
+  When a build checked out several repositories, such as a Pipeline shared
+  library, the job's own Git remote picks one; only freestyle and multibranch
+  jobs declare it, so for other jobs `revision` is left out rather than
+  guessed. It is also absent when the build has no Git data.
+- Update the companion Skill to `0.2.7` for `revision`.
+
 ## [0.11.0] - 2026-10-12
 
 ### Added
@@ -353,7 +365,8 @@ workflow.
   release binaries and `make install`. A generated CLI reference (`docs/cli/`)
   and a GitHub Pages landing page.
 
-[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/AngelMsger/jenkins-cli/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/AngelMsger/jenkins-cli/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/AngelMsger/jenkins-cli/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/AngelMsger/jenkins-cli/compare/v0.9.0...v0.10.0

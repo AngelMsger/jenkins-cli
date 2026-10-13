@@ -72,6 +72,17 @@ type Build struct {
 	Parameters    []KV    `json:"parameters,omitempty"`
 	ChangesetKind string  `json:"changeset_kind,omitempty"`
 	ChangeCount   int     `json:"change_count,omitempty"`
+	// Revision is the commit the job built; absent without Git data. Only
+	// GetBuild fills it.
+	Revision *Revision `json:"revision,omitempty"`
+}
+
+// Revision is the Git commit a build checked out. Branch is as Jenkins
+// reports it: origin/main for a classic job, main for a multibranch branch.
+type Revision struct {
+	SHA    string `json:"sha"`
+	Branch string `json:"branch,omitempty"`
+	Remote string `json:"remote,omitempty"`
 }
 
 // Cause explains why a build started (a user, a timer, an upstream build, SCM).

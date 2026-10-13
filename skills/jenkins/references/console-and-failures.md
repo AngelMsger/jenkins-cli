@@ -16,7 +16,13 @@ that number is **128**; substitute the returned number throughout. Do not keep
 using a moving permalink across stages, tests, logs and changes.
 
 `build get` returns `result`, `building`, `started_at`, `started_ago`, duration,
-node and trigger `causes`. A running build may not have a final result yet.
+node, trigger `causes` and the Git commit the job built (`revision`: `sha`,
+`branch` as Jenkins names it, `remote`). A running build may not have a final
+result yet. `revision` is absent when the build has no Git data, or when it
+checked out several repositories (a shared library, say) and the job does not
+declare which one is its own; Pipeline jobs that load their script from SCM
+never declare it. A pull-request build that merges into its target reports the
+merge commit Jenkins made, not the pull request's head.
 
 ## 2. Localize the failure
 

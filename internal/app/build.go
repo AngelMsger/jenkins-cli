@@ -61,10 +61,11 @@ func newBuildListCmd(s *appState) *cobra.Command {
 func newBuildGetCmd(s *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get <path> [ref]",
-		Short: "Get one build: result, timing, trigger cause",
+		Short: "Get one build: result, timing, trigger cause, commit",
 		Long: "Returns a build's result and status, when it started (absolute and\n" +
 			"relative) and how long it ran, which node it ran on, what triggered it,\n" +
-			"and any build parameters. ref defaults to the latest build.",
+			"any build parameters, and the Git commit the job built (revision).\n" +
+			"ref defaults to the latest build.",
 		Args: cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			path, ref := pathAndRef(args)
