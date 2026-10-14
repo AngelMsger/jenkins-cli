@@ -136,8 +136,7 @@ func newAuthLogoutCmd(s *appState) *cobra.Command {
 				scheme = auth.SchemeToken
 			}
 			if err := auth.ForgetForConfig(cfg, scheme, s.store); err != nil {
-				return cerrors.Wrap(err, cerrors.CategoryConfig, "LOGOUT_FAILED",
-					"failed to remove stored credential")
+				return credentialLogoutFailure(err)
 			}
 			return s.emit(map[string]any{"logged_out": true, "base_url": cfg.BaseURL, "scheme": scheme})
 		},
