@@ -17,8 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   its contexts record (only when every context on that credential key is this
   same Jenkins URL). A context that records a username is never changed. Checks
   the command did not make before run within ten seconds (or `--timeout`), adopt
-  only when the keychain itself answered during this run, and otherwise leave
-  the earlier answer. A scheme supplied by flag, environment, `.env` or a
+  only on reliable evidence that the context has no working login (it records
+  no username, or the keychain itself answered during this run), and otherwise
+  leave the earlier answer. A scheme supplied by flag, environment, `.env` or a
   credential variable keeps reuse within it. A context without a username is no
   longer looked up as a source, and a source whose secret is reliably absent no
   longer fails the command. The decision now comes from agent-cli-kit's shared
