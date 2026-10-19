@@ -56,10 +56,14 @@ type NamedContext struct {
 type Config struct {
 	// CredentialBaseURL preserves an equivalent stored URL's native lookup key.
 	// It is runtime-only and never changes the request destination.
-	CredentialBaseURL string     `yaml:"-" json:"-"`
-	BaseURL           string     `yaml:"server" config:"server"`
-	Auth              AuthConfig `yaml:"auth"`
-	Defaults          Defaults   `yaml:"defaults"`
+	CredentialBaseURL string `yaml:"-" json:"-"`
+	// ReuseStep is the `auth reuse` command that goes before any sign-in step
+	// for this context, or "" when the file offers nothing to reuse. It is
+	// runtime-only, computed offline from the configuration file.
+	ReuseStep string     `yaml:"-" json:"-"`
+	BaseURL   string     `yaml:"server" config:"server"`
+	Auth      AuthConfig `yaml:"auth"`
+	Defaults  Defaults   `yaml:"defaults"`
 }
 
 // AuthConfig holds non-secret auth settings. Username is the Jenkins login the

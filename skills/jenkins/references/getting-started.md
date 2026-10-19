@@ -93,10 +93,21 @@ For preset team services, use `config set-context` and `auth guide` before perso
 
 ## Reuse existing authentication
 
-`jenkins-cli --use-context team auth reuse --dry-run` previews association from
-an existing context with the same complete service URL, scheme and provider scope.
-Apply without `--dry-run`, then verify with `auth status`. No login, token copy,
-current-context switch or replacement of a populated identity occurs. A different
-verified source can be selected with `--from-context` after `config get-contexts`.
-`AUTH_REUSE_AMBIGUOUS` requires choosing an identity; store/network/permission
-errors require their named recovery, not automatic reauthentication.
+`jenkins-cli --use-context team auth reuse` points a context without a username
+at a login this machine already verified for the same complete Jenkins URL;
+`--dry-run` previews the same decision. Both schemes (`token` and `basic`) send a
+username, so a context without one has no login of its own, and a context that
+records one is never changed. Reuse looks at contexts under the context's own
+scheme first, then at any API token or password for this Jenkins, including one
+stored for it that no context points at any more (paired with the usernames
+recorded on its contexts). The result reports `scheme`, `username`, `account` (the
+Jenkins user `id` the login authenticated as) and, when the source is a context,
+`source_context`; its `next_steps` name the check to run next (`auth status`). Two
+credentials of one account count as one login. No secret is copied and the
+current context does not change.
+
+`AUTH_REUSE_AMBIGUOUS` lists `details.candidates` (with each `account`); choose
+one with `--from-context <name>`, `--from-scheme <scheme>`, or both (the stored
+secret of that scheme paired with that context's username). Store, network and
+permission errors require their named recovery, not a new login. When the result
+says the keychain could not be read here, retry on the host before signing in.

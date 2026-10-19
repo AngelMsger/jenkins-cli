@@ -309,6 +309,8 @@ Released under the [MIT License](LICENSE).
 
 An installer can run `jenkins-cli config set-context team --base-url <url> --auth-scheme token --activate` without credentials or network access. Members then run `jenkins-cli auth guide` and `jenkins-cli auth login`. See [team distribution and personal login](docs/installation.md#team-distribution-and-personal-login) for environment-only presets, conflict handling, and version-specific credential pages.
 
-To associate an existing login with a prepared team context, run
+To point a prepared team context at a login this machine already has for the
+same Jenkins, whatever scheme it uses (an API token or a password), run
 `jenkins-cli --use-context team auth reuse --dry-run`, then omit `--dry-run`.
+The result names the Jenkins account the login belongs to.
 See [existing-login reuse](docs/installation.md#reuse-an-existing-login).
