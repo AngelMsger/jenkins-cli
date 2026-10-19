@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-10-19
+
 ### Changed
 
 - The `skill` commands, the Skill notice and `doctor` read the Skill version,
@@ -375,7 +377,8 @@ workflow.
   release binaries and `make install`. A generated CLI reference (`docs/cli/`)
   and a GitHub Pages landing page.
 
-[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.12.1...HEAD
+[0.12.1]: https://github.com/AngelMsger/jenkins-cli/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/AngelMsger/jenkins-cli/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/AngelMsger/jenkins-cli/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/AngelMsger/jenkins-cli/compare/v0.10.0...v0.10.1
