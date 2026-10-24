@@ -111,12 +111,18 @@ flow. The canonical behavior is in the installation guide's team setup section.
 
 ## Credential reuse
 
-Keep `auth reuse` separate from public service setup. Match complete URLs and
-provider scope before credential access, preserve configured destination identities,
-verify native credentials before associating missing identity, and retain operational
-failures. Never copy secrets, infer identity from environment variables or activate
-a context. Cover dry-run, ambiguity, scope mismatch, concurrent edits and fresh-load
-credential resolution. Native self-configuration follows the existing read-only exception.
+Keep `auth reuse` separate from public service setup. The decision belongs to
+agent-cli-kit's `reuse` package; this repository only describes its contexts,
+resolves, verifies and writes. Match complete URLs before credential access,
+preserve configured destination identities (both schemes send a username, so any
+recorded username is one), consider the other scheme and stored secrets only as
+the kit decides, and retain operational failures. Verification returns the
+Jenkins user `id` as the canonical account without an extra request. Never copy
+secrets, infer identity from environment variables or activate a context. Cover
+dry-run, token/basic adoption, stored secrets paired with recorded usernames,
+ambiguity, one account's two credentials, scope mismatch, concurrent edits and
+fresh-load credential resolution. Native self-configuration follows the existing
+read-only exception.
 
 ## Credential storage and cleanup
 

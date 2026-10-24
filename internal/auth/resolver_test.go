@@ -52,3 +52,32 @@ func TestResolveCredentialRecovery(t *testing.T) {
 		})
 	}
 }
+
+// A context a stored login could serve lists `auth reuse` after the host retry
+// and before any step that signs in, and first when its identity is missing.
+func TestResolveListsReuseBeforeSignIn(t *testing.T) {
+	t.Parallel()
+	step := "jenkins-cli --use-context 'team' auth reuse"
+	cfg := config.Config{BaseURL: "https://jenkins.example.com", ReuseStep: step,
+		Auth: config.AuthConfig{Scheme: SchemeToken, Username: "alice"}}
+	_, err := Resolve(cfg, config.Secrets{}, newStoreWithKeyring(t.TempDir(), failingKeyring{err: keyring.ErrNotFound}))
+	steps := cerrors.AsCLIError(err).NextSteps
+	reuseAt, signInAt := -1, -1
+	for i, s := range steps {
+		switch {
+		case s == step:
+			reuseAt = i
+		case s == MissingStep:
+			signInAt = i
+		}
+	}
+	if reuseAt < 1 || signInAt != reuseAt+1 {
+		t.Fatalf("missing-credential steps %v", steps)
+	}
+
+	cfg.Auth.Username = ""
+	_, err = Resolve(cfg, config.Secrets{Token: "from-environment"}, nil)
+	if ce := cerrors.AsCLIError(err); ce.Code != "AUTH_NO_TOKEN" || len(ce.NextSteps) == 0 || ce.NextSteps[0] != step {
+		t.Fatalf("missing identity: %+v", ce)
+	}
+}

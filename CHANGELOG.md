@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `auth reuse` looks beyond the context's own scheme. A context without a
+  username (under either scheme it then has no login of its own) still
+  considers contexts under its own scheme first, then an API token or password
+  for the same Jenkins under the other scheme: another context's, or one stored
+  for this Jenkins that no context points at any more, paired with the usernames
+  its contexts record (only when every context on that credential key is this
+  same Jenkins URL). A context that records a username is never changed. Checks
+  the command did not make before run within ten seconds (or `--timeout`), adopt
+  only on reliable evidence that the context has no working login (it records
+  no username, or the keychain itself answered during this run), and otherwise
+  leave the earlier answer. A scheme supplied by flag, environment, `.env` or a
+  credential variable keeps reuse within it. A context without a username is no
+  longer looked up as a source, and a source whose secret is reliably absent no
+  longer fails the command. The decision now comes from agent-cli-kit's shared
+  `reuse` package.
+- The `auth reuse` result adds `scheme`, `username`, `account` (the Jenkins user
+  `id` the login authenticated as), `account_name` and `next_steps`. An API token
+  and a password of one account are one login instead of a choice;
+  `AUTH_REUSE_AMBIGUOUS` adds `details.candidates`.
+- `config set-context`, `auth guide`, missing-credential errors, `doctor` and HTTP
+  401 errors list `auth reuse` before any sign-in step when the configuration
+  file shows that a stored login could apply.
+- A context may now change scheme through `auth reuse`. A setup tool that passes
+  the old `--auth-scheme` to every command reports a context conflict for it
+  until it stops pinning the scheme.
+
+### Added
+
+- `auth reuse --from-scheme <scheme>` selects the credential stored for this
+  Jenkins under that scheme, paired with the usernames recorded for it; with
+  `--from-context`, paired with that context's username.
+
 ## [0.12.1] - 2026-10-19
 
 ### Changed

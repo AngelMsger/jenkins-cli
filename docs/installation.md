@@ -235,25 +235,47 @@ jenkins-cli --use-context team auth reuse
 jenkins-cli --use-context team auth status
 ```
 
-Reuse matches the complete normalized service URL, authentication scheme and
-provider scope (deployment flavor, organization or tenant where applicable).
-It verifies the source credential before filling missing destination identity.
-A populated destination identity is preserved. Credentials stay in their native
-store; no secrets or environment credentials are copied. Both source and unrelated
-contexts remain unchanged. Configuration changes during verification stop the write.
+Reuse matches the complete normalized service URL before any credential access.
+Both Jenkins schemes (`token` and `basic`) send a username, so a context that
+records one keeps it and is never changed, and a context without one has no
+login of its own. Such a context looks first at contexts under its own scheme,
+then at any API token or password for the same Jenkins: another context's, or
+one stored for it that no context points at any more, paired with the usernames
+recorded on its contexts (and only when every context on that credential key is
+this same Jenkins URL). Credentials stay in their native store; no secrets or
+environment credentials are copied. Both source and unrelated contexts remain
+unchanged. Configuration or credential changes during verification stop the
+write.
 
-The JSON result reports `context`, `state`, `changed`, `verified`, `dry_run` and,
-when selected, `source_context`. States are `available` (verified preview),
-`reused`, `unchanged`, or `unavailable`. The last two do not establish successful
-authentication: always retain the separate `auth status` check. No reusable
-identity is a normal no-change result. Network, permission and credential-store
-failures retain their structured errors instead of suggesting a fresh login.
+Checks the command did not make before (of the other scheme and of stored
+secrets) run within ten seconds of the start, or the `--timeout` when shorter,
+and only adopt on reliable evidence: the keychain itself answered during this
+run. Otherwise the earlier answer stands, with its `reason`. A scheme supplied by
+`--auth-scheme`, `JENKINS_AUTH_SCHEME`, `.env` or a credential variable keeps
+reuse within that scheme.
 
-Multiple different verified identities return `AUTH_REUSE_AMBIGUOUS`; discover
-context names with `config get-contexts`, then repeat with `--from-context <name>`.
-The command does not replace identities or switch authentication schemes. As
-with native `auth login`, updating this CLI's own settings remains available
-in remote read-only mode; `--dry-run` never changes settings or credentials.
+The JSON result reports `context`, `state`, `changed`, `verified`, `dry_run`,
+`next_steps` and, when a source was selected, `scheme`, `username`, `account`
+(the Jenkins user `id` the login authenticated as), `account_name` (its full
+name) and `source_context` (when the source is a context). Writes made through
+the context run as that account. Two credentials of one account (an API token
+and a password) are one login; the context's own scheme is preferred. States are
+`available` (verified preview), `reused`, `unchanged`, or `unavailable`. The last
+two do not establish successful authentication: run the check `next_steps` names
+(`auth status`). No reusable login is a normal no-change result. Network,
+permission and credential-store failures retain their structured errors instead
+of suggesting a fresh login.
+
+Several different verified accounts return `AUTH_REUSE_AMBIGUOUS` with
+`details.candidates`; repeat with `--from-context <name>`, `--from-scheme
+<scheme>`, or both (the stored secret of that scheme paired with that context's
+username). As with native `auth login`, updating this CLI's own settings remains
+available in remote read-only mode; `--dry-run` never changes settings or
+credentials.
+
+`config set-context`, `auth guide`, missing-credential errors, `doctor` and HTTP
+401 errors list `auth reuse` before any sign-in step when the configuration file
+shows that a stored login could apply.
 
 Equivalent service URL overrides preserve the persisted native credential lookup
 key without redirecting requests or copying secrets. Logout removes that same

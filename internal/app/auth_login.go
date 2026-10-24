@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"errors"
 	"reflect"
 	"strings"
@@ -116,23 +117,30 @@ func completeLogin(s *appState, cfg config.Config, cred auth.Credential, service
 }
 
 func verifyCredential(s *appState, cfg config.Config, cred auth.Credential) error {
+	_, err := verifyCredentialWithin(context.Background(), s, cfg, cred)
+	return err
+}
+
+// verifyCredentialWithin verifies cred under parent, which may carry an earlier
+// deadline than the request timeout, and returns the authenticated user.
+func verifyCredentialWithin(parent context.Context, s *appState, cfg config.Config, cred auth.Credential) (*apiclient.User, error) {
 	if err := cred.Validate(); err != nil {
-		return err
+		return nil, err
 	}
-	ctx, cancel := cmdContext(s)
+	ctx, cancel := context.WithTimeout(parent, s.timeout())
 	defer cancel()
 	client, err := apiclient.BuildClient(apiclient.BuildParams{BaseURL: cfg.BaseURL, AuthDecorator: cred.Decorator(), Timeout: s.timeout(), MaxRetries: cfg.Defaults.MaxRetries})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	user, err := client.WhoAmI(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if user == nil || user.ID == "" || strings.EqualFold(user.ID, "anonymous") {
-		return cerrors.New(cerrors.CategoryAuth, "AUTH_IDENTITY_UNAVAILABLE", "Jenkins did not return an authenticated user")
+		return nil, cerrors.New(cerrors.CategoryAuth, "AUTH_IDENTITY_UNAVAILABLE", "Jenkins did not return an authenticated user")
 	}
-	return nil
+	return user, nil
 }
 
 // credentialSaveFailure preserves a successful backend write when cleanup of

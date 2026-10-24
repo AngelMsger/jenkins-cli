@@ -98,6 +98,8 @@ retry also reports them missing. See [getting-started.md](references/getting-sta
   or exact running/queued target, then execute once. `--allow-writes` overrides
   configured read-only mode only for an authorized write; do not bypass a
   user-requested read-only scope. Clarify only missing targets or changed scope.
+  After `auth reuse` points a context at a login, its writes run as the
+  reported `account`; confirm that account with the user before the first write.
 - **Status is normalized.** Jenkins encodes outcome in a job's `color`; the CLI
   maps it to `status` (success / failure / unstable / building / disabled /
   not_built / aborted). Timestamps come back as both an ISO instant and a
@@ -134,6 +136,7 @@ jenkins-cli config init|show                         # configuration
 jenkins-cli config get-contexts|use-context <name>   # list / switch named server contexts
 jenkins-cli config delete-context <name>             # remove a context and its unused secret
 jenkins-cli auth status                              # who am I / can I reach the server
+jenkins-cli auth reuse [--from-context <name>] [--from-scheme <scheme>] [--dry-run]   # adopt a login already on this machine
 jenkins-cli doctor                                   # diagnose config / creds / connectivity
 jenkins-cli skill status|install|path|show|uninstall # manage the companion Skill
 ```
@@ -192,6 +195,11 @@ semantics, credential URL overrides, and failure recovery.
 
 ## Reuse existing authentication
 
-Before repeating login, preview `jenkins-cli --use-context <target> auth reuse
---dry-run`, then apply. Keep the separate `auth status` check. See
+A context without a username has no login of its own; it can adopt one already
+verified for the same Jenkins, an API token or a password under either scheme.
+Workspace tools apply this during setup. Elsewhere the CLI lists `auth reuse`
+ahead of any sign-in step, including after an HTTP 401, and its result names the
+next step and the login it used (`scheme`, `username`, `account`). A context that
+records a username is never changed; `--from-context` and `--from-scheme` select a
+source explicitly. See
 [reuse and ambiguity recovery](references/getting-started.md#reuse-existing-authentication).
