@@ -1,7 +1,8 @@
 // Command mockserver is a tiny stand-in for a Jenkins remote API, used by
 // scripts/e2e.sh to exercise jenkins-cli end-to-end without a real Jenkins or
 // credentials. It serves canned jobs, builds, console output, stages, tests and
-// queue responses, and accepts the write POSTs.
+// queue responses, and accepts the write POSTs. When MOCK_WRITE_LOG names a
+// file, every write request is appended to it.
 package main
 
 import (
@@ -11,6 +12,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 func main() {
@@ -21,12 +23,48 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", route)
+	var handler http.Handler = mux
+	if path := os.Getenv("MOCK_WRITE_LOG"); path != "" {
+		handler = logWrites(handler, path)
+	}
 
 	fmt.Fprintf(os.Stderr, "mockserver listening on %s\n", addr)
-	if err := http.ListenAndServe(addr, mux); err != nil {
+	if err := http.ListenAndServe(addr, handler); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+}
+
+// logWrites appends "METHOD PATH" to the file at path for every request that
+// can change state, so scripts/e2e.sh can assert that read-only mode let no
+// write reach the server. A request that cannot be logged fails with 500
+// rather than going unrecorded.
+func logWrites(next http.Handler, path string) http.Handler {
+	var mu sync.Mutex
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+			mu.Lock()
+			err := appendLine(path, r.Method+" "+r.URL.Path)
+			mu.Unlock()
+			if err != nil {
+				http.Error(w, "mockserver: write log failed: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func appendLine(path, line string) error {
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintln(f, line); err != nil {
+		f.Close()
+		return err
+	}
+	return f.Close()
 }
 
 func route(w http.ResponseWriter, r *http.Request) {

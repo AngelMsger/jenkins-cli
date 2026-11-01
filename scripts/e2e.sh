@@ -23,7 +23,8 @@ trap cleanup EXIT
 # Build and start the mock server (build to a binary so the trap can kill the
 # actual server process — `go run` would leave its compiled child orphaned).
 go build -o "$TMP/mockserver" "$ROOT/test/mockserver"
-"$TMP/mockserver" "$ADDR" 2>"$TMP/mock.log" &
+WRITE_LOG="$TMP/writes.log"
+MOCK_WRITE_LOG="$WRITE_LOG" "$TMP/mockserver" "$ADDR" 2>"$TMP/mock.log" &
 MOCK_PID=$!
 
 # Wait for it to accept connections.
@@ -115,18 +116,40 @@ check "job build dry-run" '"dry_run": true'     -- run job build app --param BRA
 check "dry-run endpoint"  'buildWithParameters'  -- run job build app --param BRANCH=main --dry-run
 check "build stop dry-run" '/job/app/7/stop'     -- run build stop app 7 --dry-run
 
-# Read-only mode blocks a real write with exit code 5 (permission).
-set +e
-JENKINS_CLI_READ_ONLY=1 run job build app >/dev/null 2>&1; code=$?
-set -e
-if [[ "$code" -ne 5 ]]; then
-  echo "FAIL - read-only write should exit 5, got $code"; exit 1
+# Read-only mode blocks every write command with READONLY_BLOCKED and exit code
+# 5 (permission) before any request is sent. The mock server's write log must
+# stay empty until the first --allow-writes call.
+: >"$WRITE_LOG"
+ro_blocks() { # ro_blocks <label> <command args...>
+  local label="$1"; shift
+  local err code
+  set +e
+  err="$(JENKINS_CLI_READ_ONLY=1 run "$@" 2>&1 >/dev/null)"; code=$?
+  set -e
+  if [[ "$code" -ne 5 ]] || ! grep -q '"code": "READONLY_BLOCKED"' <<<"$err"; then
+    echo "FAIL - read-only blocks $label (exit $code)"; echo "$err" | head -5; exit 1
+  fi
+  echo "ok   - read-only blocks $label (exit 5)"
+  pass=$((pass + 1))
+}
+ro_blocks "job build"    job build app --param BRANCH=main
+ro_blocks "build stop"   build stop app 7
+ro_blocks "queue cancel" queue cancel 77
+check "read-only + --dry-run still previews" '"dry_run": true' -- env JENKINS_CLI_READ_ONLY=1 "$BIN" --config "$TMP" build stop app 7 --dry-run
+if [[ -s "$WRITE_LOG" ]]; then
+  echo "FAIL - read-only sent no write request (server saw: $(tr '\n' ';' <"$WRITE_LOG"))"; exit 1
 fi
-echo "ok   - read-only blocks job build (exit 5)"
+echo "ok   - read-only sent no write request"
 pass=$((pass + 1))
 
 # --allow-writes overrides read-only and actually triggers (mock returns a queue ref).
-check "allow-writes triggers" '"triggered": true' -- run --allow-writes job build app
+check "allow-writes triggers" '"triggered": true' -- env JENKINS_CLI_READ_ONLY=1 "$BIN" --config "$TMP" --allow-writes job build app
+if grep -qx "POST /job/app/build" "$WRITE_LOG"; then
+  echo "ok   - write log records --allow-writes requests"
+  pass=$((pass + 1))
+else
+  echo "FAIL - write log records --allow-writes requests"; exit 1
+fi
 
 # Exit-code contract: missing required path arg -> usage (2).
 set +e

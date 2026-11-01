@@ -15,7 +15,8 @@ read-only mode:
 - `queue cancel` — drop a queued build
 
 Jenkins' control plane (creating / configuring jobs, credentials, nodes) is on
-the roadmap; each new write method plugs into this same wrapper without rework.
+the roadmap; each new write method plugs into this same wrapper without rework,
+and the build fails until it does (see below).
 
 ## Enabling it
 
@@ -37,9 +38,11 @@ Three layers, in precedence order:
 
 When the posture is read-only, the API client is wrapped by
 `apiclient.NewReadOnly` before any command runs (`pkg/apiclient/readonly.go`).
-The wrapper embeds the real client, so every **read** passes straight through.
-Each **write** method (`TriggerBuild`, `StopBuild`, `CancelQueueItem`) overrides
-the embedded one to return a structured error instead of issuing a request:
+`Client` is the union of two interfaces: `Reader` (every lookup, listing and
+probe) and `Writer` (`TriggerBuild`, `StopBuild`, `CancelQueueItem`). The
+wrapper keeps the real client only as a `Reader`, so every **read** passes
+straight through and no write can be forwarded. It implements each **write**
+itself, returning a structured error instead of issuing a request:
 
 ```json
 {
@@ -55,7 +58,10 @@ the embedded one to return a structured error instead of issuing a request:
 ```
 
 `READONLY_BLOCKED` maps to exit code 5 (`permission`). The block happens in the
-client, so it is enforced regardless of which command triggered the write.
+client, so it is enforced regardless of which command triggered the write. A
+method added to `Writer` without its blocking override fails to compile
+(`var _ Client = (*readOnlyClient)(nil)`), so a new write cannot slip through
+unblocked.
 
 ## Relationship to `--dry-run`
 

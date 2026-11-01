@@ -32,7 +32,9 @@ architecture of the sibling `confluence-cli` / `bitbucket-cli` / `openobserve-cl
 - `pkg/apiclient` — the Jenkins HTTP surface and models. One file per
   resource (jobs, builds, console, pipeline, tests, changes, queue, writes);
   `paths.go` maps human job paths and build refs to Jenkins URLs; `models.go`
-  normalizes Jenkins JSON (color → status); `readonly.go` blocks the writes.
+  normalizes Jenkins JSON (color → status). `Client` is the union of `Reader`
+  and `Writer`; `readonly.go` delegates `Reader` and blocks every `Writer`
+  method.
 - `pkg/errors` — re-exports the shared `CLIError` model and exit-code map (0–11)
   and installs jenkins-cli's hints (`hints.go`).
 - `pkg/transport` — re-exports the shared retrying HTTP client with
@@ -73,9 +75,11 @@ the command that lists values of that kind.
 Jenkins' control plane (create / configure jobs, credentials, nodes, CASC) is the
 roadmap. New write commands must: add `--dry-run` (emit the would-be request via
 a pure `*Plan` builder in `apiclient`, so it works even in read-only mode),
-require `--yes` for destructive ops, route through `apiclient.NewReadOnly`
-(override the new method to return `READONLY_BLOCKED`), fetch a CSRF crumb for
-POSTs, and keep the `{items,has_more}` + structured-error contract.
+require `--yes` for destructive ops, declare the new client method on `Writer`
+(never `Reader`) and override it in `readonly.go` to return `READONLY_BLOCKED`
+(the build fails until you do), fetch a CSRF crumb for POSTs, and keep the
+`{items,has_more}` + structured-error contract. A new read goes on `Reader`;
+`TestReadOnlyDelegatesEveryRead` fails until its delegation case is added.
 
 **Keep the companion Skill in sync — it is the agent-facing source of truth.**
 Any new command, subcommand, flag, or alias (and any change to write-gating) must

@@ -214,10 +214,16 @@ from `--help`; CI fails if the committed output is stale.
 
 - Unit tests cover `timeutil`, the error mappings, output projection, and the API
   client against an `httptest` server (the job/build/console/stages/tests
-  decoders, the dry-run plan builders, and the read-only blocks).
+  decoders, the dry-run plan builders). The read-only tests check their tables
+  against the `Writer` and `Reader` method sets: every write must return
+  `READONLY_BLOCKED` naming its operation without sending a request, and every
+  read must reach the inner client with the same arguments and return its
+  results unchanged.
 - `scripts/e2e.sh` runs the built binary against `test/mockserver` and asserts
   the agent-facing contract (JSON output, structured errors, exit codes) with no
-  real credentials. Queue lifecycle tests cover waiting, assigned and cancelled
+  real credentials. Every write command runs under read-only mode, and the mock
+  server's write log (`MOCK_WRITE_LOG`) must stay empty until the first
+  `--allow-writes` call. Queue lifecycle tests cover waiting, assigned and cancelled
   items; the embedded shell error-handling example is executed against stubbed
   exit codes so its recovery behavior stays correct.
 
