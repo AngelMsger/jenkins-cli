@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `pkg/apiclient` exports `Reader` and `Writer`; `Client` is now their union,
+  with the same method set and signatures as before.
+
+### Changed
+
+- The read-only wrapper keeps the inner client only as a `Reader` and blocks
+  each `Writer` method itself, so a write added without a blocking override
+  fails to compile instead of reaching Jenkins in a read-only session. No CLI
+  behavior, output or error changes.
+
 ## [0.13.0] - 2026-10-27
 
 ### Changed

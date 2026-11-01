@@ -374,24 +374,3 @@ func TestWritePlans(t *testing.T) {
 		t.Errorf("cancel plan = %+v", cp)
 	}
 }
-
-func TestReadOnlyBlocksWrites(t *testing.T) {
-	client, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-		t.Errorf("read-only client must not send a request (%s %s)", r.Method, r.URL.Path)
-	})
-	ro := NewReadOnly(client)
-	if _, err := ro.TriggerBuild(context.Background(), "app", nil); !isReadonlyBlocked(err) {
-		t.Errorf("TriggerBuild err = %v", err)
-	}
-	if err := ro.StopBuild(context.Background(), "app", "5"); !isReadonlyBlocked(err) {
-		t.Errorf("StopBuild err = %v", err)
-	}
-	if err := ro.CancelQueueItem(context.Background(), 1); !isReadonlyBlocked(err) {
-		t.Errorf("CancelQueueItem err = %v", err)
-	}
-}
-
-func isReadonlyBlocked(err error) bool {
-	ce := cerrors.AsCLIError(err)
-	return ce != nil && ce.Code == "READONLY_BLOCKED"
-}

@@ -25,11 +25,20 @@ import (
 	"github.com/angelmsger/jenkins-cli/pkg/transport"
 )
 
-// Client is the Jenkins API surface used by the CLI. Read methods cover the
-// developer's inspection workflow; the three write methods (TriggerBuild,
-// StopBuild, CancelQueueItem) are the only mutating calls and are gated by the
-// read-only wrapper.
+// Client is the Jenkins API surface used by the CLI. It is the union of Reader
+// and Writer, so every method is classified as one or the other; NewReadOnly
+// relies on that split.
 type Client interface {
+	Reader
+	Writer
+}
+
+// Reader is the part of Client that never changes Jenkins state: the
+// developer's inspection workflow (jobs, builds, console, stages, tests,
+// changes, artifacts, queue) and connectivity probes. The read-only wrapper
+// delegates exactly this interface, so a method that can mutate Jenkins must
+// never be declared here.
+type Reader interface {
 	// BaseURL returns the normalized Jenkins server root (no trailing slash).
 	BaseURL() string
 
@@ -67,7 +76,12 @@ type Client interface {
 	ListQueue(ctx context.Context) ([]QueueItem, error)
 	// GetQueueItem returns one queue item by id.
 	GetQueueItem(ctx context.Context, id int) (*QueueItem, error)
+}
 
+// Writer is the part of Client that changes Jenkins state. The read-only
+// wrapper (NewReadOnly) blocks each method explicitly, so adding one here
+// without its blocking override fails compilation.
+type Writer interface {
 	// TriggerBuild starts a build of a job, with optional parameters. It returns
 	// a pointer to the resulting queue item.
 	TriggerBuild(ctx context.Context, path string, params map[string]string) (*QueueRef, error)

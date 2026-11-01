@@ -6,23 +6,26 @@ import (
 	cerrors "github.com/angelmsger/jenkins-cli/pkg/errors"
 )
 
-// readOnlyClient wraps a Client and blocks every mutating method before a
-// request leaves the process. Reads pass straight through; the three write
-// methods (TriggerBuild, StopBuild, CancelQueueItem) return a structured
-// READONLY_BLOCKED error.
+// NewReadOnly wraps c so that every mutating method returns a READONLY_BLOCKED
+// error before a request leaves the process. Reads (the Reader half of Client)
+// pass straight through.
 //
 // This is how the session read-only posture (defaults.read_only /
-// JENKINS_CLI_READ_ONLY / --allow-writes) is enforced. As the control-plane
-// surface grows (create/configure jobs, credentials, nodes), each new write
-// method gets one override here and nothing else changes.
-type readOnlyClient struct {
-	Client
+// JENKINS_CLI_READ_ONLY / --allow-writes) is enforced.
+func NewReadOnly(c Client) Client {
+	return &readOnlyClient{Reader: c}
 }
 
-// NewReadOnly returns a read-only view of c.
-func NewReadOnly(c Client) Client {
-	return &readOnlyClient{Client: c}
+// readOnlyClient is the read-only enforcement layer. It keeps the inner client
+// only as a Reader, so reads are delegated unchanged and no write can reach it.
+// Every Writer method is overridden below to return READONLY_BLOCKED; the
+// assertion that follows stops compilation when a new Writer method (create or
+// configure jobs, credentials, nodes, ...) lacks its override.
+type readOnlyClient struct {
+	Reader
 }
+
+var _ Client = (*readOnlyClient)(nil)
 
 func (r *readOnlyClient) TriggerBuild(context.Context, string, map[string]string) (*QueueRef, error) {
 	return nil, blocked("trigger a build")
