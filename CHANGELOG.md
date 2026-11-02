@@ -21,13 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `--verbose` now logs each HTTP request's method, URL and status on stderr
-  for every command, `doctor` and the login check. It used to log a bare
+- `--verbose` now logs each request to the server (method, URL and status) on
+  stderr for every command, `doctor` and the login check. It used to log a bare
   `> METHOD URL` line only for the connectivity probes, so most commands logged
-  nothing although the error guidance points at the flag.
-  It uses agent-cli-kit's transport log, which never writes headers or bodies,
-  so the parse-error guidance no longer says `--verbose` shows the raw
-  response; it says what `--verbose` shows: each request's URL and status.
+  nothing although the error guidance points at the flag. It uses
+  agent-cli-kit's transport log, which never writes headers or bodies, so the
+  parse-error guidance no longer says `--verbose` shows the raw response; it
+  says what `--verbose` shows: each request's URL and status. The release check,
+  which asks for a newer version, is not logged.
 
 ## [0.13.0] - 2026-10-27
 
