@@ -1,6 +1,7 @@
 package apiclient
 
 import (
+	"io"
 	"net/url"
 	"strings"
 	"time"
@@ -16,6 +17,9 @@ type BuildParams struct {
 	AuthDecorator transport.Decorator
 	Timeout       time.Duration
 	MaxRetries    int
+	// Verbose, when non-nil, receives the --verbose request log: one line per
+	// request with its method, URL and status, never headers or bodies.
+	Verbose io.Writer
 }
 
 // BuildClient assembles a ready-to-use Client: it normalizes the base URL and
@@ -36,6 +40,7 @@ func BuildClient(p BuildParams) (Client, error) {
 		Timeout:    p.Timeout,
 		MaxRetries: p.MaxRetries,
 		Decorators: []transport.Decorator{p.AuthDecorator},
+		Verbose:    p.Verbose,
 	})
 
 	return New(Config{BaseURL: base, Transport: tc}), nil
