@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Mask passwords embedded in the server URL in `--verbose` request logs by
+  pinning agent-cli-kit's merged transport fix (`8e0dd08af52d`).
+
 - `--verbose` now logs each request to the server (method, URL and status) on
   stderr for every command, `doctor` and the login check. It used to log a bare
   `> METHOD URL` line only for the connectivity probes, so most commands logged
