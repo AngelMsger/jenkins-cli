@@ -59,6 +59,22 @@ check() { # check <label> <expected-substr> -- <command...>
 }
 
 check "job list"        '"name": "app"'        -- run job list
+# --verbose logs one line per request (method, URL, status) on stderr: never on
+# stdout, which stays data, and never a header.
+verbose_out="$(JENKINS_URL="http://verbose-user:e2e-url-secret@${URL#http://}" run --verbose job list 2>"$TMP/verbose.err")"
+if grep -Eq '^[A-Z]+ http://verbose-user:xxxxx@[^ ]+ -> 200$' "$TMP/verbose.err" &&
+  grep -q '"name": "app"' <<<"$verbose_out" && ! grep -q ' -> 200' <<<"$verbose_out" &&
+  ! grep -qF 'e2e-url-secret' "$TMP/verbose.err" &&
+  ! grep -qF 'e2e-url-secret' <<<"$verbose_out" &&
+  ! grep -qiE 'authorization|bearer |basic ' "$TMP/verbose.err"; then
+  echo "ok   - --verbose logs on stderr only and masks the URL password"
+  pass=$((pass + 1))
+else
+  echo "FAIL - --verbose logs on stderr only and masks the URL password"
+  head -5 "$TMP/verbose.err"
+  exit 1
+fi
+check "--verbose doctor logs its requests" ' -> 200' -- sh -c "\"$BIN\" --config \"$TMP\" --verbose doctor --no-update-check 2>&1 >/dev/null"
 check "job list status" '"status": "failure"'  -- run job list
 run --format ndjson --fields name job list >"$TMP/jobs.ndjson" 2>"$TMP/jobs.stderr"
 if grep -qx '{"name":"app"}' "$TMP/jobs.ndjson" &&
