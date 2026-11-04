@@ -170,6 +170,7 @@ func TestStopResolvesAPermalink(t *testing.T) {
 type foreignClient struct {
 	Client
 	build   *Build
+	stopErr error
 	stopped []string
 }
 
@@ -179,7 +180,7 @@ func (f *foreignClient) GetBuild(_ context.Context, path, ref string) (*Build, e
 
 func (f *foreignClient) StopBuild(_ context.Context, path, ref string) error {
 	f.stopped = append(f.stopped, path+"#"+ref)
-	return nil
+	return f.stopErr
 }
 
 // StopBuildNumber works with any Client: it reads the build a permalink names
@@ -198,6 +199,36 @@ func TestStopBuildNumberWithAnotherClient(t *testing.T) {
 	_, err := StopBuildNumber(context.Background(), f, "app", "lastFailed")
 	if ce := cerrors.AsCLIError(err); ce == nil || ce.Code != "BUILD_NOT_FOUND" || len(f.stopped) != 0 {
 		t.Fatalf("got %+v, stops %q; want BUILD_NOT_FOUND and no stop", ce, f.stopped)
+	}
+}
+
+// A foreign Client's failed stop may still have stopped the build, so it is
+// reported as this package's clients report one: an unknown outcome, not
+// retryable, with the read of the stopped build. Before, its retryable 503
+// came back as it was, inviting a second stop. A definite refusal, such as a
+// read-only wrapper's, still comes back unchanged.
+func TestStopBuildNumberClassifiesAnotherClientsStop(t *testing.T) {
+	unavailable := cerrors.New(cerrors.CategoryServer, "HTTP_503", "service unavailable").WithHTTPStatus(503)
+	unavailable.Retryable = true
+	for name, stopErr := range map[string]error{
+		"classified": unavailable,
+		"raw":        errors.New("connection reset by peer"),
+	} {
+		t.Run(name, func(t *testing.T) {
+			f := &foreignClient{build: &Build{Number: 12}, stopErr: stopErr}
+			n, err := StopBuildNumber(context.Background(), f, "app", "last")
+			ce := cerrors.AsCLIError(err)
+			if n != 12 || ce == nil || ce.Retryable ||
+				!strings.HasPrefix(ce.Message, "Write outcome is unknown for build 12 of job app") ||
+				len(ce.NextSteps) == 0 || ce.NextSteps[0] != "jenkins-cli build get 'app' '12'" {
+				t.Fatalf("got %d, %+v; want an unknown outcome naming build 12", n, ce)
+			}
+		})
+	}
+	refused := cerrors.New(cerrors.CategoryPermission, "READONLY_BLOCKED", "read-only")
+	f := &foreignClient{stopErr: refused}
+	if _, err := StopBuildNumber(context.Background(), f, "app", "7"); err != refused {
+		t.Fatalf("got %v; want the refusal unchanged", err)
 	}
 }
 

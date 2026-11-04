@@ -79,7 +79,9 @@ func (c *apiClient) StopBuild(ctx context.Context, path, ref string) error {
 //
 // The clients this package builds, read-only ones included, resolve and stop
 // in one call. Any other Client is asked for the build with GetBuild, then
-// stopped by its number.
+// stopped by its number, and a failed stop is reported by the family's write
+// rule, as this package's clients report it: only a definite refusal comes
+// back as it is, and anything else is an unknown outcome to read first.
 func StopBuildNumber(ctx context.Context, c Client, path, ref string) (int, error) {
 	if s, ok := c.(numberStopper); ok {
 		return s.stopBuildNumber(ctx, path, ref)
@@ -94,7 +96,8 @@ func StopBuildNumber(ctx context.Context, c Client, path, ref string) (int, erro
 			return 0, noBuild(path, ref)
 		}
 	}
-	return n, c.StopBuild(ctx, path, strconv.Itoa(n))
+	num := strconv.Itoa(n)
+	return n, cerrors.FromWrite(c.StopBuild(ctx, path, num), buildWriteTarget(path, num))
 }
 
 // numberStopper is implemented by the clients this package builds, so
