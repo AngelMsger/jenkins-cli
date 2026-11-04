@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/angelmsger/jenkins-cli/pkg/apiclient"
@@ -195,8 +196,11 @@ func newBuildStopCmd(s *appState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "stop <path> <ref>",
 		Short: "Abort a running build (write)",
-		Long: "Aborts the build at <path> #<ref>. With --dry-run, print the request\n" +
-			"that would be sent and exit. This is a write: it is blocked in read-only\n" +
+		Long: "Aborts the build at <path> #<ref>. A permalink such as last is first\n" +
+			"resolved to its build number, so the build stopped, and the number in the\n" +
+			"output, stay the same build even if a newer one starts meanwhile. With\n" +
+			"--dry-run, print the request that would be sent and exit (offline, so a\n" +
+			"permalink stays in its URL). This is a write: it is blocked in read-only\n" +
 			"mode unless --allow-writes is given.",
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -210,10 +214,11 @@ func newBuildStopCmd(s *appState) *cobra.Command {
 			if dryRun {
 				return s.emit(apiclient.StopBuildPlan(client.BaseURL(), path, ref))
 			}
-			if err := client.StopBuild(ctx, path, ref); err != nil {
+			n, err := client.StopBuild(ctx, path, ref)
+			if err != nil {
 				return err
 			}
-			return s.emit(map[string]any{"stopped": true, "job": path, "build": ref})
+			return s.emit(map[string]any{"stopped": true, "job": path, "build": strconv.Itoa(n)})
 		},
 	}
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print the request without stopping the build")

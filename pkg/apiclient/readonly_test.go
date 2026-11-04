@@ -47,7 +47,7 @@ func TestReadOnlyBlocksEveryWrite(t *testing.T) {
 			_, err := c.TriggerBuild(ctx, "app", map[string]string{"BRANCH": "main"})
 			return err
 		}},
-		{"StopBuild", "stop a build", func() error { return c.StopBuild(ctx, "app", "5") }},
+		{"StopBuild", "stop a build", func() error { _, err := c.StopBuild(ctx, "app", "5"); return err }},
 		{"CancelQueueItem", "cancel a queue item", func() error { return c.CancelQueueItem(ctx, 1) }},
 	}
 	var names []string

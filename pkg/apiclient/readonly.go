@@ -31,8 +31,8 @@ func (r *readOnlyClient) TriggerBuild(context.Context, string, map[string]string
 	return nil, blocked("trigger a build")
 }
 
-func (r *readOnlyClient) StopBuild(context.Context, string, string) error {
-	return blocked("stop a build")
+func (r *readOnlyClient) StopBuild(context.Context, string, string) (int, error) {
+	return 0, blocked("stop a build")
 }
 
 func (r *readOnlyClient) CancelQueueItem(context.Context, int) error {

@@ -55,7 +55,8 @@ alone cannot tell whether tests ran, passed or failed before publishing results.
 
 Use the write authorization and scope rules in the main Skill. Inspect `job get`
 for supported parameters before triggering; use the exact running build number
-or queue id for a stop/cancel. Preview the intended write with `--dry-run`,
+or queue id for a stop/cancel. A permalink such as `last` is resolved to its
+number before the stop is sent, and the output names that number. Preview the intended write with `--dry-run`,
 then perform the authorized action once:
 
 ```bash

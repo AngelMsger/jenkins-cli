@@ -86,9 +86,18 @@ implementation. One file per resource: `jobs.go`, `builds.go`, `console.go`,
   permission, not found, conflict) is returned unchanged; any other failure,
   such as a timeout or a 5xx after the POST, becomes "Write outcome is unknown
   for …" with `retryable=false`, so an agent checks before triggering a second
-  build. A trigger whose response has no queue item `Location` reports
-  `WRITE_SUCCEEDED_RESPONSE_INVALID`: Jenkins queued the build, but the CLI
-  cannot say which one.
+  build. A trigger whose response has no queue item `Location` (a URL whose
+  path ends in `/queue/item/<n>/`) reports `WRITE_SUCCEEDED_RESPONSE_INVALID`:
+  Jenkins queued the build, but the CLI cannot say which one. Jenkins answers a
+  trigger itself, so a trigger whose response came from a followed redirect
+  (the POST became a GET, often to a login page) is an unknown outcome caused
+  by `HTTP_REDIRECTED`. A stop or cancel is acknowledged by Jenkins' redirect
+  to the build or queue page, so following it stays a success.
+- `build stop` resolves a permalink (`last`, `lastFailed`, …) to its build
+  number with a read before it posts the stop, so the stop and the `build get`
+  that reconciles an uncertain stop name the same build even when a newer one
+  starts meanwhile. The `--dry-run` preview is offline, so it keeps the
+  permalink in its URL.
 - `factory.go`'s `BuildClient` normalizes the base URL and constructs the
   transport with the auth decorator. `readonly.go` is the read-only wrapper (see
   [read-only-mode.md](read-only-mode.md)).

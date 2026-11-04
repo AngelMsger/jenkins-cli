@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `Client.StopBuild` returns the stopped build's number along with the error,
+  for library callers.
 - The read-only wrapper keeps the inner client only as a `Reader` and blocks
   each `Writer` method itself, so a write added without a blocking override
   fails to compile instead of reaching Jenkins in a read-only session. No CLI
@@ -37,6 +39,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `job build` no longer reports success with an empty `queue` when Jenkins
   answers without a queue item `Location`. The build was queued, so it fails
   with `WRITE_SUCCEEDED_RESPONSE_INVALID` and names `queue list` to find it.
+  Only a URL whose path ends in `/queue/item/<n>/` counts as a queue item; a
+  build or job page that merely ends in a number used to be read as one.
+- `job build` answered through a redirect (a login page or single sign-on
+  proxy, or `http` to `https`) is an unknown outcome caused by
+  `HTTP_REDIRECTED`, instead of "Write succeeded … but no queue item": the
+  HTTP client followed the redirect with a GET, so the page it landed on said
+  nothing about the build.
+- `build stop <path> last` (or another permalink) resolves the permalink to
+  its build number first and stops that build. It used to post to the
+  permalink and, after an uncertain stop, name `build get <path> last`, which
+  could by then show a newer build. The output's `build` is now the number.
 - Mask passwords embedded in the server URL in `--verbose` request logs, with
   agent-cli-kit v0.6.0's transport.
 

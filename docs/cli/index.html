@@ -300,8 +300,11 @@ exactly which stage failed. Applies to Pipeline / multibranch jobs only.</p>
       <h2>jenkins-cli build stop</h2>
       <p class="short">Abort a running build (write)</p>
       <pre>jenkins-cli build stop &lt;path&gt; &lt;ref&gt; [flags]</pre>
-      <p class="long">Aborts the build at &lt;path&gt; #&lt;ref&gt;. With --dry-run, print the request
-that would be sent and exit. This is a write: it is blocked in read-only
+      <p class="long">Aborts the build at &lt;path&gt; #&lt;ref&gt;. A permalink such as last is first
+resolved to its build number, so the build stopped, and the number in the
+output, stay the same build even if a newer one starts meanwhile. With
+--dry-run, print the request that would be sent and exit (offline, so a
+permalink stays in its URL). This is a write: it is blocked in read-only
 mode unless --allow-writes is given.</p>
       <h3>Options</h3>
       <table>

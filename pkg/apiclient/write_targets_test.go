@@ -2,6 +2,7 @@ package apiclient
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 	"testing"
@@ -34,7 +35,8 @@ func TestWriteFailuresAreUnknownOutcomes(t *testing.T) {
 			return err
 		}, triggerWriteTarget("team/app")},
 		{"stop", func(c Client) error {
-			return c.StopBuild(context.Background(), "team/app", "7")
+			_, err := c.StopBuild(context.Background(), "team/app", "7")
+			return err
 		}, buildWriteTarget("team/app", "7")},
 		{"cancel", func(c Client) error {
 			return c.CancelQueueItem(context.Background(), 77)
@@ -62,7 +64,8 @@ func TestWriteFailuresAreUnknownOutcomes(t *testing.T) {
 // guidance.
 func TestWriteRefusalPassesThrough(t *testing.T) {
 	c, _ := newTestClient(t, writeHandler(http.StatusNotFound))
-	ce := cerrors.AsCLIError(c.StopBuild(context.Background(), "app", "7"))
+	_, err := c.StopBuild(context.Background(), "app", "7")
+	ce := cerrors.AsCLIError(err)
 	if ce.Category != cerrors.CategoryNotFound || strings.Contains(ce.Message, "Write outcome") {
 		t.Fatalf("got %s %q; want the 404 unchanged", ce.Category, ce.Message)
 	}
@@ -111,5 +114,86 @@ func TestTriggerReturnsTheQueueItem(t *testing.T) {
 	ref, err := c.TriggerBuild(context.Background(), "app", nil)
 	if err != nil || ref.QueueID != 42 {
 		t.Fatalf("got %+v, %v; want queue item 42", ref, err)
+	}
+}
+
+// A permalink names whichever build is newest when it is read. Stopping
+// "last" used to send /lastBuild/stop and name "last" in the read after an
+// uncertain stop, which by then could show a newer build. The ref is resolved
+// to its number first, so the stop and the read name the same build.
+func TestStopResolvesAPermalink(t *testing.T) {
+	for name, status := range map[string]int{"stopped": http.StatusOK, "uncertain": http.StatusServiceUnavailable} {
+		t.Run(name, func(t *testing.T) {
+			var posts []string
+			c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+				switch {
+				case r.Method == http.MethodPost:
+					posts = append(posts, r.URL.Path)
+					w.WriteHeader(status)
+				case r.URL.Path == "/job/app/lastBuild/api/json":
+					w.Write([]byte(`{"number":12}`))
+				default:
+					w.Write([]byte(`{"crumbRequestField":"Jenkins-Crumb","crumb":"c"}`))
+				}
+			})
+			n, err := c.StopBuild(context.Background(), "app", "last")
+			if len(posts) != 1 || posts[0] != "/job/app/12/stop" {
+				t.Fatalf("stop requests %q; want /job/app/12/stop", posts)
+			}
+			if status == http.StatusOK {
+				if err != nil || n != 12 {
+					t.Fatalf("got %d, %v; want build 12 stopped", n, err)
+				}
+				return
+			}
+			ce := cerrors.AsCLIError(err)
+			if ce == nil || !strings.HasPrefix(ce.Message, "Write outcome is unknown for build 12 of job app") ||
+				len(ce.NextSteps) == 0 || ce.NextSteps[0] != "jenkins-cli build get 'app' '12'" {
+				t.Fatalf("got %+v; want an unknown outcome naming build 12", ce)
+			}
+		})
+	}
+}
+
+// Only a queue item's URL names the queued build. A Location such as a build
+// or job page that ends in a number used to be read as a queue id.
+func TestParseQueueID(t *testing.T) {
+	for loc, want := range map[string]int{
+		"http://x/queue/item/42/":         42,
+		"http://x/queue/item/42":          42,
+		"http://x/jenkins/queue/item/42/": 42,
+		"http://x/job/app/42/":            0,
+		"http://x/queue/item/abc/":        0,
+		"":                                0,
+	} {
+		if got := parseQueueID(loc); got != want {
+			t.Errorf("parseQueueID(%q) = %d, want %d", loc, got, want)
+		}
+	}
+}
+
+// Jenkins never answers a trigger with a redirect. One that was followed
+// turned the POST into a GET, so the build may or may not be queued; before,
+// the login page it landed on read as "accepted, but no queue item".
+func TestRedirectedTriggerIsAnUnknownOutcome(t *testing.T) {
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost:
+			http.Redirect(w, r, "/login", http.StatusFound)
+		case r.URL.Path == "/login":
+			w.Write([]byte("<html>sign in</html>"))
+		default:
+			w.Write([]byte(`{"crumbRequestField":"Jenkins-Crumb","crumb":"c"}`))
+		}
+	})
+	_, err := c.TriggerBuild(context.Background(), "app", nil)
+	ce := cerrors.AsCLIError(err)
+	if ce == nil || ce.Retryable || ce.Code == cerrors.CodeWriteSucceededResponseInvalid ||
+		!strings.HasPrefix(ce.Message, "Write outcome is unknown for build of job app") {
+		t.Fatalf("got %+v; want an unknown write outcome", ce)
+	}
+	var cause *cerrors.CLIError
+	if !errors.As(errors.Unwrap(ce), &cause) || cause.Code != "HTTP_REDIRECTED" {
+		t.Fatalf("cause %+v; want HTTP_REDIRECTED", cause)
 	}
 }

@@ -167,6 +167,16 @@ else
   echo "FAIL - write log records --allow-writes requests"; exit 1
 fi
 
+# A permalink is resolved to its build number before the stop, so the build
+# stopped and the one named in the output are the same even if a newer starts.
+check "build stop resolves last" '"build": "7"' -- run build stop app last
+if grep -qx "POST /job/app/7/stop" "$WRITE_LOG"; then
+  echo "ok   - stop on a permalink posts to the build number"
+  pass=$((pass + 1))
+else
+  echo "FAIL - stop on a permalink posts to the build number (server saw: $(tr '\n' ';' <"$WRITE_LOG"))"; exit 1
+fi
+
 # Read-only mode is the user's setting: the error offers --allow-writes only for
 # an authorized write and never tells an agent to unset the switch.
 ro_err="$(JENKINS_CLI_READ_ONLY=1 run job build app 2>&1 >/dev/null || true)"
