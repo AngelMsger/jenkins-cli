@@ -74,7 +74,9 @@ uncertain, inspect state before retrying to avoid triggering duplicate builds.
 
 ## Follow the triggered build
 
-A successful `job build` returns `queue.queue_id` and `queue.queue_url`. Poll
+A successful `job build` returns `queue.queue_id` and `queue.queue_url` (when
+Jenkins names no queue item, it fails with `WRITE_SUCCEEDED_RESPONSE_INVALID`:
+the build was queued, so find it with `queue list` instead of triggering again). Poll
 that id with `queue get <id>` at a bounded interval (for example, every five
 seconds for up to a minute):
 

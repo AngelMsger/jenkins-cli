@@ -99,13 +99,13 @@ func runInitForm(def initValues) (initValues, error) {
 func runInitPrompts(def initValues) (initValues, error) {
 	v := def.withDefaults()
 	var err error
-	if v.baseURL, err = promptLine("Server URL", v.baseURL); err != nil {
+	if v.baseURL, err = prompter().Line("Server URL", v.baseURL); err != nil {
 		return v, err
 	}
-	if v.username, err = promptLine("Username", v.username); err != nil {
+	if v.username, err = prompter().Line("Username", v.username); err != nil {
 		return v, err
 	}
-	if v.scheme, err = promptLine("Auth scheme (token/basic)", v.scheme); err != nil {
+	if v.scheme, err = prompter().Line("Auth scheme (token/basic)", v.scheme); err != nil {
 		return v, err
 	}
 	if g, e := wizardGuide(v); e != nil {
@@ -119,7 +119,7 @@ func runInitPrompts(def initValues) (initValues, error) {
 	if v.scheme == auth.SchemeBasic {
 		label = "Password"
 	}
-	if v.secret, err = promptSecret(label); err != nil {
+	if v.secret, err = prompter().Secret(label); err != nil {
 		return v, err
 	}
 	return v, nil

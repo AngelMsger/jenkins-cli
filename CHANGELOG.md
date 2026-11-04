@@ -18,9 +18,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   each `Writer` method itself, so a write added without a blocking override
   fails to compile instead of reaching Jenkins in a read-only session. No CLI
   behavior, output or error changes.
+- A write that fails after it may have reached Jenkins (timeout, network
+  error, 429, 5xx, redirect) now reports "Write outcome is unknown for …",
+  `retryable: false`, and the reads that show the result as `next_steps`
+  (`queue list` and `build list` after `job build`, `build get` after
+  `build stop`, `queue get` after `queue cancel`), instead of a retryable error
+  that invited a second build. Definite refusals such as 403 and 404 are
+  unchanged. This is agent-cli-kit v0.6.0's shared write rule.
+- `READONLY_BLOCKED` uses agent-cli-kit's shared wording: the message reads
+  `operation "trigger a build" blocked: read-only mode is enabled`, the hint
+  says read-only mode is the user's setting, and the next steps are
+  `--dry-run` and, only for a write the user authorized, `--allow-writes`.
+- Prompts (`auth login`, `config init`) use agent-cli-kit's
+  `terminal.Prompter`; their wording is unchanged.
 
 ### Fixed
 
+- `job build` no longer reports success with an empty `queue` when Jenkins
+  answers without a queue item `Location`. The build was queued, so it fails
+  with `WRITE_SUCCEEDED_RESPONSE_INVALID` and names `queue list` to find it.
 - Mask passwords embedded in the server URL in `--verbose` request logs, with
   agent-cli-kit v0.6.0's transport.
 

@@ -200,7 +200,10 @@ func (c *apiClient) postForm(ctx context.Context, path string, form url.Values) 
 		return nil, cerrors.Wrap(err, cerrors.CategoryNetwork, "NETWORK",
 			fmt.Sprintf("request to %s failed", c.baseURL+path))
 	}
-	if resp.StatusCode >= 400 {
+	// Only a 2xx acknowledges a write: Jenkins answers a trigger with 201 and a
+	// queue location, and the redirect after a stop or cancel is followed to
+	// its 200 page.
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		defer resp.Body.Close()
 		return nil, c.httpError(resp, path)
 	}

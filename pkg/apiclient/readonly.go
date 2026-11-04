@@ -39,15 +39,14 @@ func (r *readOnlyClient) CancelQueueItem(context.Context, int) error {
 	return blocked("cancel a queue item")
 }
 
-// blocked builds the structured error returned for a write attempt in read-only
-// mode. Note --dry-run previews still work: they never call these methods.
+// blocked returns the family's READONLY_BLOCKED error for a refused write. op
+// names the write ("trigger a build"). Turning read-only mode off is the
+// user's decision, so the error names the user's switches without offering to
+// change them. --dry-run previews still work: they never call these methods.
 func blocked(op string) error {
-	return cerrors.Newf(cerrors.CategoryPermission, "READONLY_BLOCKED",
-		"refusing to %s: read-only mode is enabled", op).
-		WithHint("This session is read-only (defaults.read_only / JENKINS_CLI_READ_ONLY). "+
-			"Preview the request with --dry-run, or re-run with --allow-writes to override.").
-		WithNextSteps(
-			"Add --dry-run to preview the request without sending it",
-			"Add --allow-writes to override read-only mode for this command",
-			"unset JENKINS_CLI_READ_ONLY / set defaults.read_only=false to disable it")
+	return cerrors.ReadOnlyBlocked(op, cerrors.ReadOnlyMode{
+		Env:        "JENKINS_CLI_READ_ONLY",
+		ConfigFile: "~/.angelmsger/jenkins/config.yaml",
+		DryRun:     true,
+	})
 }

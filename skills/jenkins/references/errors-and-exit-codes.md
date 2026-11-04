@@ -31,9 +31,9 @@ present) tells you whether a retry in the same environment could help
 | `auth`       | 4    | Credentials rejected → `auth status`, re-run `config init`. |
 | `permission` | 5    | Authenticated but not allowed, or read-only mode blocked a write. |
 | `not_found`  | 6    | Unknown job / build → `job list`, `build list <path>`. |
-| `rate_limit` | 7    | Too many requests; retryable. |
-| `network`    | 8    | Server unreachable; retryable → `doctor`, check `--base-url`. |
-| `server`     | 9    | Jenkins 5xx; retryable. |
+| `rate_limit` | 7    | Too many requests; retryable for a read (a write: see below). |
+| `network`    | 8    | Server unreachable; retryable for a read → `doctor`, check `--base-url`. |
+| `server`     | 9    | Jenkins 5xx; retryable for a read (a write: see below). |
 | `parse`      | 10   | Response didn't match expectations; retry with `--verbose`. |
 | `conflict`   | 11   | Resource changed since read; re-fetch then retry. |
 
@@ -85,4 +85,13 @@ fi
 - **`READONLY_BLOCKED` (permission/5)** — a write (`job build`, `build stop`,
   `queue cancel`) was blocked because the session is read-only. Preview with
   `--dry-run`; use `--allow-writes` only for a write the user authorized.
+- **"Write outcome is unknown for …"** — a write failed after it may have
+  reached Jenkins (timeout, network error, 429, 5xx). It is `retryable=false`:
+  a second `job build` could start a second build. Run the reads in
+  `next_steps` (`queue list` and `build list` for a trigger, `build get` for a
+  stop, `queue get` for a cancel) and repeat the write only if they show it did
+  not happen.
+- **`WRITE_SUCCEEDED_RESPONSE_INVALID`** — Jenkins accepted `job build` but
+  named no queue item, so the build is queued and unidentified. Find it with
+  the reads in `next_steps`; never trigger again.
 - **`BAD_PARAM` (usage/2)** — `--param` must be `KEY=VALUE`.

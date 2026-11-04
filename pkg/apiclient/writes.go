@@ -5,6 +5,8 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+
+	cerrors "github.com/angelmsger/jenkins-cli/pkg/errors"
 )
 
 // buildEndpoint returns the trigger path for a job and whether parameters are
@@ -26,21 +28,27 @@ func paramForm(params map[string]string) url.Values {
 
 // TriggerBuild starts a build of a job. With parameters it posts to
 // buildWithParameters; without, to build. It returns a pointer to the queue
-// item created (parsed from the Location header).
+// item created, parsed from the Location header. Jenkins accepted the build
+// once it answers, so a response without a queue item location reports the
+// write as done but unidentified, never as something to send again.
 func (c *apiClient) TriggerBuild(ctx context.Context, path string, params map[string]string) (*QueueRef, error) {
-	resp, err := c.postForm(ctx, buildEndpoint(path, len(params) > 0), paramForm(params))
+	target := triggerWriteTarget(path)
+	resp, err := c.postWrite(ctx, buildEndpoint(path, len(params) > 0), paramForm(params), target)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 	ref := &QueueRef{QueueURL: resp.Header.Get("Location")}
 	ref.QueueID = parseQueueID(ref.QueueURL)
+	if ref.QueueID == 0 {
+		return nil, cerrors.MissingWriteIdentity(target)
+	}
 	return ref, nil
 }
 
 // StopBuild aborts a running build.
 func (c *apiClient) StopBuild(ctx context.Context, path, ref string) error {
-	resp, err := c.postForm(ctx, jobPath(path)+"/"+buildRef(ref)+"/stop", nil)
+	resp, err := c.postWrite(ctx, jobPath(path)+"/"+buildRef(ref)+"/stop", nil, buildWriteTarget(path, ref))
 	if err != nil {
 		return err
 	}
@@ -50,7 +58,7 @@ func (c *apiClient) StopBuild(ctx context.Context, path, ref string) error {
 
 // CancelQueueItem removes a still-queued build before it starts.
 func (c *apiClient) CancelQueueItem(ctx context.Context, id int) error {
-	resp, err := c.postForm(ctx, "/queue/cancelItem", url.Values{"id": {strconv.Itoa(id)}})
+	resp, err := c.postWrite(ctx, "/queue/cancelItem", url.Values{"id": {strconv.Itoa(id)}}, queueWriteTarget(id))
 	if err != nil {
 		return err
 	}

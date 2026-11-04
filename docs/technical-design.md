@@ -76,7 +76,19 @@ implementation. One file per resource: `jobs.go`, `builds.go`, `console.go`,
   task-specific guidance (401 → use an API token; 404 → list to find the path).
 - `getText` backs the plain-text console endpoints; `postForm` performs writes,
   attaching a CSRF crumb fetched (once, cached) from `/crumbIssuer/api/json` — a
-  404 there means CSRF is disabled and the POST proceeds crumbless.
+  404 there means CSRF is disabled and the POST proceeds crumbless. Only a 2xx
+  acknowledges a write.
+- Writes follow the family's write-outcome rule from agent-cli-kit
+  (`errors.FromWrite`): each goes through `postWrite` with a write target
+  (`write_targets.go`) naming what it changes and the bounded reads that show
+  it (`queue list` plus `build list <path> --limit 5` for a trigger, `build get`
+  for a stop, `queue get` for a cancel). A definite refusal (usage, auth,
+  permission, not found, conflict) is returned unchanged; any other failure,
+  such as a timeout or a 5xx after the POST, becomes "Write outcome is unknown
+  for …" with `retryable=false`, so an agent checks before triggering a second
+  build. A trigger whose response has no queue item `Location` reports
+  `WRITE_SUCCEEDED_RESPONSE_INVALID`: Jenkins queued the build, but the CLI
+  cannot say which one.
 - `factory.go`'s `BuildClient` normalizes the base URL and constructs the
   transport with the auth decorator. `readonly.go` is the read-only wrapper (see
   [read-only-mode.md](read-only-mode.md)).
