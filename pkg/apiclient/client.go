@@ -182,7 +182,10 @@ func (c *apiClient) getText(ctx context.Context, path string, query url.Values) 
 // postForm performs a POST with an application/x-www-form-urlencoded body,
 // attaching a CSRF crumb. It returns the response so callers can read headers
 // (e.g. the Location of a queued build). The caller must close the body.
-func (c *apiClient) postForm(ctx context.Context, path string, form url.Values) (*http.Response, error) {
+//
+// Only a 2xx acknowledges a write, or a response ack accepts (nil accepts
+// none). The transport never follows a write's redirect, so ack sees it.
+func (c *apiClient) postForm(ctx context.Context, path string, form url.Values, ack func(*http.Response) bool) (*http.Response, error) {
 	var bodyReader io.Reader
 	if len(form) > 0 {
 		bodyReader = strings.NewReader(form.Encode())
@@ -202,14 +205,42 @@ func (c *apiClient) postForm(ctx context.Context, path string, form url.Values) 
 		return nil, cerrors.Wrap(err, cerrors.CategoryNetwork, "NETWORK",
 			fmt.Sprintf("request to %s failed", c.baseURL+path))
 	}
-	// Only a 2xx acknowledges a write: Jenkins answers a trigger with 201 and a
-	// queue location, and the redirect after a stop or cancel is followed to
-	// its 200 page.
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+	if (resp.StatusCode < 200 || resp.StatusCode >= 300) && (ack == nil || !ack(resp)) {
 		defer resp.Body.Close()
 		return nil, c.httpError(resp, path)
 	}
 	return resp, nil
+}
+
+// forwardedToPreviousPage reports whether resp is how Jenkins acknowledges a
+// stop or a cancel. Both answer with Stapler's forwardToPreviousPage: a 302
+// to the Referer or, since the CLI sends none, to "." of the request, the
+// directory its path is in (the build page /job/app/42/ for
+// /job/app/42/stop, /queue/ for /queue/cancelItem).
+//
+// The Location must name the request's own host and that directory, with no
+// query and no fragment (a fragment-routed login page can sit at the same
+// path). Its scheme and port are not compared: the servlet container builds
+// the absolute Location from its own view of them, which behind a proxy that
+// terminates TLS is often http and the container's port. A login page or a
+// single sign-on proxy redirects to another path or another host, and an
+// https upgrade keeps the request's own path; none of them is the request's
+// directory on its host. A proxy that also leaks the container's internal
+// host name gets an unknown outcome, whose read shows the result: a redirect
+// that only looks like the acknowledgment must never report a stop or a
+// cancel that may not have reached Jenkins.
+func forwardedToPreviousPage(resp *http.Response) bool {
+	if resp.StatusCode != http.StatusFound && resp.StatusCode != http.StatusSeeOther {
+		return false
+	}
+	loc, err := resp.Location()
+	if err != nil {
+		return false
+	}
+	req := resp.Request.URL
+	p := req.Path
+	return strings.EqualFold(loc.Hostname(), req.Hostname()) && loc.RawQuery == "" &&
+		loc.Fragment == "" && loc.Path == p[:strings.LastIndex(p, "/")+1]
 }
 
 // crumb fetches (once, then caches) the CSRF crumb required for POST requests.

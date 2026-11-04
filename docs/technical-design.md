@@ -77,7 +77,9 @@ implementation. One file per resource: `jobs.go`, `builds.go`, `console.go`,
 - `getText` backs the plain-text console endpoints; `postForm` performs writes,
   attaching a CSRF crumb fetched (once, cached) from `/crumbIssuer/api/json` — a
   404 there means CSRF is disabled and the POST proceeds crumbless. Only a 2xx
-  acknowledges a write.
+  acknowledges a write, except Jenkins' own acknowledgment of a stop or cancel
+  (below). The kit's transport never follows a write's redirect, so `postForm`
+  sees it.
 - Writes follow the family's write-outcome rule from agent-cli-kit
   (`errors.FromWrite`): each goes through `postWrite` with a write target
   (`write_targets.go`) naming what it changes and the bounded reads that show
@@ -89,10 +91,20 @@ implementation. One file per resource: `jobs.go`, `builds.go`, `console.go`,
   build. A trigger whose response has no queue item `Location` (a URL whose
   path ends in `/queue/item/<n>/`) reports `WRITE_SUCCEEDED_RESPONSE_INVALID`:
   Jenkins queued the build, but the CLI cannot say which one. Jenkins answers a
-  trigger itself, so a trigger whose response came from a followed redirect
-  (the POST became a GET, often to a login page) is an unknown outcome caused
-  by `HTTP_REDIRECTED`. A stop or cancel is acknowledged by Jenkins' redirect
-  to the build or queue page, so following it stays a success.
+  trigger itself, so a redirect of a trigger (often to a login page, a single
+  sign-on proxy, or `http` to `https`) is an unknown outcome with the
+  redirect's status. A stop or cancel is acknowledged by Stapler's
+  `forwardToPreviousPage`: with no `Referer`, a 302 to "." of the request, the
+  build page for `/job/<path>/<n>/stop` and `/queue/` for `/queue/cancelItem`.
+  `forwardedToPreviousPage` accepts a 302 or 303 whose `Location` names the
+  request's own host and that directory, with no query and no fragment (a
+  fragment-routed login page can sit at the same path). It ignores the scheme
+  and port, which the servlet container fills in from its own view (often
+  `http` and the container's port behind a TLS proxy). Any other redirect,
+  including a 307 or 308, one to another host at the same path (a single
+  sign-on proxy), and one to the container's internal host name, is an
+  unknown outcome: a redirect that only looks like the acknowledgment never
+  reports a stop or a cancel that may not have reached Jenkins.
 - `build stop` resolves a permalink (`last`, `lastFailed`, …) to its build
   number with a read before it posts the stop, so the stop and the `build get`
   that reconciles an uncertain stop name the same build even when a newer one

@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -29,41 +28,24 @@ func paramForm(params map[string]string) url.Values {
 
 // TriggerBuild starts a build of a job. With parameters it posts to
 // buildWithParameters; without, to build. It returns a pointer to the queue
-// item created, parsed from the Location header. Jenkins accepted the build
-// once it answers, so a response without a queue item location reports the
+// item created, parsed from the Location header. Jenkins answers a trigger
+// itself (201 and a Location), never with a redirect, so a redirect (often to
+// a login page) is an unknown outcome. Jenkins accepted the build once it
+// answers with a 2xx, so a response without a queue item location reports the
 // write as done but unidentified, never as something to send again.
 func (c *apiClient) TriggerBuild(ctx context.Context, path string, params map[string]string) (*QueueRef, error) {
 	target := triggerWriteTarget(path)
-	resp, err := c.postWrite(ctx, buildEndpoint(path, len(params) > 0), paramForm(params), target)
+	resp, err := c.postWrite(ctx, buildEndpoint(path, len(params) > 0), paramForm(params), target, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	// Jenkins answers a trigger itself (201 and a Location), never with a
-	// redirect. One that was followed turned the POST into a GET, so the
-	// response came from that GET (often a login page), and whether the build
-	// was queued is unknown.
-	if resp.Request != nil && resp.Request.Method != http.MethodPost {
-		return nil, cerrors.FromWrite(redirectedTrigger(resp), target)
-	}
 	ref := &QueueRef{QueueURL: resp.Header.Get("Location")}
 	ref.QueueID = parseQueueID(ref.QueueURL)
 	if ref.QueueID == 0 {
 		return nil, cerrors.MissingWriteIdentity(target)
 	}
 	return ref, nil
-}
-
-// redirectedTrigger is the cause of a trigger whose response came from a
-// followed redirect. The same request is redirected the same way again, so it
-// is not retryable.
-func redirectedTrigger(resp *http.Response) error {
-	e := cerrors.Newf(cerrors.CategoryServer, "HTTP_REDIRECTED",
-		"Jenkins redirected the POST request to %s", resp.Request.URL.Redacted()).
-		WithHint("A redirect after a trigger usually means a login page, a single sign-on proxy, " +
-			"or a base URL that should use https. Check --base-url, then run doctor.")
-	e.Retryable = false
-	return e
 }
 
 // StopBuild aborts a running build; see stopBuildNumber.
@@ -108,14 +90,16 @@ type numberStopper interface {
 
 // stopBuildNumber resolves ref to a build number, so the stop, and the read
 // that reconciles an uncertain stop, name the same build even when a newer
-// one starts in between, then stops that build.
+// one starts in between, then stops that build. Jenkins acknowledges a stop
+// with a 2xx or a redirect to the build page; any other redirect leaves the
+// outcome unknown.
 func (c *apiClient) stopBuildNumber(ctx context.Context, path, ref string) (int, error) {
 	n, err := c.buildNumber(ctx, path, ref)
 	if err != nil {
 		return 0, err
 	}
 	num := strconv.Itoa(n)
-	resp, err := c.postWrite(ctx, jobPath(path)+"/"+num+"/stop", nil, buildWriteTarget(path, num))
+	resp, err := c.postWrite(ctx, jobPath(path)+"/"+num+"/stop", nil, buildWriteTarget(path, num), forwardedToPreviousPage)
 	if err != nil {
 		return 0, err
 	}
@@ -149,9 +133,12 @@ func noBuild(path, ref string) error {
 		WithNextSteps("jenkins-cli build list " + cerrors.ShellArg(path) + " --limit 5")
 }
 
-// CancelQueueItem removes a still-queued build before it starts.
+// CancelQueueItem removes a still-queued build before it starts. Jenkins
+// acknowledges it with a 2xx or a redirect to the queue page; any other
+// redirect leaves the outcome unknown.
 func (c *apiClient) CancelQueueItem(ctx context.Context, id int) error {
-	resp, err := c.postWrite(ctx, "/queue/cancelItem", url.Values{"id": {strconv.Itoa(id)}}, queueWriteTarget(id))
+	resp, err := c.postWrite(ctx, "/queue/cancelItem", url.Values{"id": {strconv.Itoa(id)}}, queueWriteTarget(id),
+		forwardedToPreviousPage)
 	if err != nil {
 		return err
 	}

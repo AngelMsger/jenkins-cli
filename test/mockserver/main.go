@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -87,11 +88,18 @@ func route(w http.ResponseWriter, r *http.Request) {
 		case path == "/job/unavailable/build":
 			// A trigger that fails after it was sent: the outcome is unknown.
 			http.Error(w, "service unavailable", http.StatusServiceUnavailable)
+		case strings.HasPrefix(path, "/job/sso/"):
+			// A single sign-on proxy in front of this job sends every write
+			// to its login page.
+			http.Redirect(w, r, "/login?from="+url.QueryEscape(path), http.StatusFound)
 		case strings.HasSuffix(path, "/build"), strings.HasSuffix(path, "/buildWithParameters"):
 			w.Header().Set("Location", "http://"+r.Host+"/queue/item/77/")
 			w.WriteHeader(http.StatusCreated)
 		case strings.HasSuffix(path, "/stop"), path == "/queue/cancelItem":
-			w.WriteHeader(http.StatusOK)
+			// Jenkins acknowledges a stop or cancel with Stapler's
+			// forwardToPreviousPage: with no Referer, a 302 to "." of the
+			// request (the build page, or /queue/).
+			http.Redirect(w, r, path[:strings.LastIndex(path, "/")+1], http.StatusFound)
 		default:
 			http.Error(w, "unknown POST", http.StatusNotFound)
 		}

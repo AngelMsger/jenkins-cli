@@ -47,11 +47,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with `WRITE_SUCCEEDED_RESPONSE_INVALID` and names `queue list` to find it.
   Only a URL whose path ends in `/queue/item/<n>/` counts as a queue item; a
   build or job page that merely ends in a number used to be read as one.
-- `job build` answered through a redirect (a login page or single sign-on
-  proxy, or `http` to `https`) is an unknown outcome caused by
-  `HTTP_REDIRECTED`, instead of "Write succeeded … but no queue item": the
-  HTTP client followed the redirect with a GET, so the page it landed on said
-  nothing about the build.
+- A write answered with a redirect (a login page or single sign-on proxy, or
+  `http` to `https`) is an unknown outcome with the redirect's status and a
+  hint on what a redirect usually means. agent-cli-kit v0.7.0's transport
+  returns the redirect instead of following it. Before, a `job build`
+  redirect was followed with a GET and its landing page read as "Write
+  succeeded … but no queue item"; a `build stop` or `queue cancel` redirected
+  to a login page read as done; and a 307 or 308 sent the write again to the
+  new location. A stop or cancel is still a success when Jenkins answers it
+  with its own redirect to the build or queue page on the same host, with no
+  query or fragment; the same path on another host (a single sign-on proxy)
+  or with a fragment (a fragment-routed login page) is an unknown outcome.
 - `build stop <path> last` (or another permalink) resolves the permalink to
   its build number first and stops that build. It used to post to the
   permalink and, after an uncertain stop, name `build get <path> last`, which

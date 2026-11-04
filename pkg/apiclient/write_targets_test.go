@@ -93,8 +93,10 @@ func TestTriggerWithoutQueueLocation(t *testing.T) {
 	}
 }
 
-// Only a 2xx acknowledges a write. A redirect the HTTP client does not follow
-// used to read as success.
+// A redirect without a Location is not Jenkins' acknowledgment (a 302 to the
+// previous page, which stop and cancel accept besides a 2xx), so it is an
+// unknown outcome. A redirect the HTTP client does not follow used to read
+// as success.
 func TestWriteRedirectIsNotSuccess(t *testing.T) {
 	c, _ := newTestClient(t, writeHandler(http.StatusFound))
 	err := c.CancelQueueItem(context.Background(), 77)
@@ -232,6 +234,21 @@ func TestStopBuildNumberClassifiesAnotherClientsStop(t *testing.T) {
 	}
 }
 
+// A decorator around one of this package's clients is a foreign Client too.
+// Its stop already reports the write outcome, so StopBuildNumber's own
+// classification leaves it as it is instead of nesting it in a second one.
+func TestStopBuildNumberThroughADecorator(t *testing.T) {
+	inner, _ := newTestClient(t, writeHandler(http.StatusServiceUnavailable))
+	decorated := struct{ Client }{inner}
+	_, err := StopBuildNumber(context.Background(), decorated, "app", "12")
+	ce := cerrors.AsCLIError(err)
+	if ce == nil || ce.Retryable ||
+		!strings.HasPrefix(ce.Message, "Write outcome is unknown for build 12 of job app") ||
+		strings.Count(ce.Message, "Write outcome is unknown") != 1 {
+		t.Fatalf("got %+v; want one unknown outcome naming build 12", ce)
+	}
+}
+
 // Only a queue item's URL names the queued build. A Location such as a build
 // or job page that ends in a number used to be read as a queue id.
 func TestParseQueueID(t *testing.T) {
@@ -249,15 +266,18 @@ func TestParseQueueID(t *testing.T) {
 	}
 }
 
-// Jenkins never answers a trigger with a redirect. One that was followed
-// turned the POST into a GET, so the build may or may not be queued; before,
-// the login page it landed on read as "accepted, but no queue item".
+// Jenkins never answers a trigger with a redirect, so one (here to a login
+// page) leaves the outcome unknown, with the redirect's status. The transport
+// returns it instead of following it: following turned the POST into a GET,
+// and the login page it landed on read as "accepted, but no queue item".
 func TestRedirectedTriggerIsAnUnknownOutcome(t *testing.T) {
+	var landed int
 	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodPost:
 			http.Redirect(w, r, "/login", http.StatusFound)
 		case r.URL.Path == "/login":
+			landed++
 			w.Write([]byte("<html>sign in</html>"))
 		default:
 			w.Write([]byte(`{"crumbRequestField":"Jenkins-Crumb","crumb":"c"}`))
@@ -265,12 +285,97 @@ func TestRedirectedTriggerIsAnUnknownOutcome(t *testing.T) {
 	})
 	_, err := c.TriggerBuild(context.Background(), "app", nil)
 	ce := cerrors.AsCLIError(err)
-	if ce == nil || ce.Retryable || ce.Code == cerrors.CodeWriteSucceededResponseInvalid ||
-		!strings.HasPrefix(ce.Message, "Write outcome is unknown for build of job app") {
-		t.Fatalf("got %+v; want an unknown write outcome", ce)
+	if ce == nil || ce.Retryable || ce.HTTPStatus != http.StatusFound || landed != 0 ||
+		!strings.HasPrefix(ce.Message, "Write outcome is unknown for build of job app") ||
+		!strings.Contains(ce.Hint, "answered it with a redirect") {
+		t.Fatalf("got %+v after %d login page reads; want an unknown outcome with the 302", ce, landed)
 	}
-	var cause *cerrors.CLIError
-	if !errors.As(errors.Unwrap(ce), &cause) || cause.Code != "HTTP_REDIRECTED" {
-		t.Fatalf("cause %+v; want HTTP_REDIRECTED", cause)
+}
+
+// Jenkins acknowledges a stop or a cancel with a redirect to "." of the
+// request on its host: the build page or the queue page, under whatever
+// scheme and port the servlet container names. That redirect is the write's
+// success; so is a 2xx.
+func TestStopAndCancelAcceptJenkinsAcknowledgment(t *testing.T) {
+	cases := []struct {
+		name, location string
+		status         int
+		write          func(Client) error
+	}{
+		{"stop, build page", "/job/app/7/", http.StatusFound, stopBuild7},
+		{"stop, build page with the container's scheme and port", "http://127.0.0.1:8080/job/app/7/", http.StatusFound, stopBuild7},
+		{"stop, see other", "/job/app/7/", http.StatusSeeOther, stopBuild7},
+		{"stop, 200", "", http.StatusOK, stopBuild7},
+		{"cancel, queue page", "/queue/", http.StatusFound, cancelItem77},
+		{"cancel, 204", "", http.StatusNoContent, cancelItem77},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			c, _ := newTestClient(t, acknowledgingHandler(t, tc.status, tc.location))
+			if err := tc.write(c); err != nil {
+				t.Fatalf("got %v; want the acknowledgment accepted", err)
+			}
+		})
+	}
+}
+
+// Any other redirect of a stop or a cancel says nothing about the write: a
+// login page, a single sign-on proxy (even one that sends the client to a
+// path shaped like the acknowledgment), an https upgrade (which keeps the
+// request's own path), or a method-preserving 307 that would send the write
+// again. A proxy that leaks the container's internal host name is an unknown
+// outcome too: its read shows the result.
+func TestStopAndCancelOtherRedirectsAreUnknownOutcomes(t *testing.T) {
+	cases := []struct {
+		name, location string
+		status         int
+		write          func(Client) error
+	}{
+		{"stop, login page", "/login?from=%2Fjob%2Fapp%2F7%2Fstop", http.StatusFound, stopBuild7},
+		{"stop, single sign-on", "https://sso.example/authorize?rd=x", http.StatusFound, stopBuild7},
+		{"stop, https upgrade", "https://jenkins.example/job/app/7/stop", http.StatusMovedPermanently, stopBuild7},
+		{"stop, https upgrade as 302", "https://jenkins.example/job/app/7/stop", http.StatusFound, stopBuild7},
+		{"stop, 307 to the build page", "/job/app/7/", http.StatusTemporaryRedirect, stopBuild7},
+		{"cancel, login page", "/login?from=%2Fqueue%2FcancelItem", http.StatusFound, cancelItem77},
+		{"cancel, another job", "/job/app/", http.StatusFound, cancelItem77},
+		{"cancel, sign-on host at the queue path", "https://sso.example/queue/?login=1", http.StatusFound, cancelItem77},
+		{"stop, sign-on host at the build path", "https://sso.example/job/app/7/", http.StatusFound, stopBuild7},
+		{"stop, build page with a query", "/job/app/7/?from=login", http.StatusFound, stopBuild7},
+		{"stop, fragment-routed login at the build path", "/job/app/7/#/login", http.StatusFound, stopBuild7},
+		{"cancel, fragment-routed login at the queue path", "/queue/#/login", http.StatusFound, cancelItem77},
+		{"stop, container's internal host", "http://jenkins.internal:8080/job/app/7/", http.StatusFound, stopBuild7},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			c, _ := newTestClient(t, acknowledgingHandler(t, tc.status, tc.location))
+			ce := cerrors.AsCLIError(tc.write(c))
+			if ce == nil || ce.Retryable || ce.HTTPStatus != tc.status ||
+				!strings.HasPrefix(ce.Message, "Write outcome is unknown for ") {
+				t.Fatalf("got %+v; want an unknown outcome with the %d", ce, tc.status)
+			}
+		})
+	}
+}
+
+func stopBuild7(c Client) error { return c.StopBuild(context.Background(), "app", "7") }
+
+func cancelItem77(c Client) error { return c.CancelQueueItem(context.Background(), 77) }
+
+// acknowledgingHandler answers every write with status and, when set, a
+// Location; it fails the test if the client follows the redirect.
+func acknowledgingHandler(t *testing.T, status int, location string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost:
+			if location != "" {
+				w.Header().Set("Location", location)
+			}
+			w.WriteHeader(status)
+		case r.URL.Path == "/crumbIssuer/api/json":
+			w.Write([]byte(`{"crumbRequestField":"Jenkins-Crumb","crumb":"c"}`))
+		default:
+			t.Errorf("the client followed the redirect to %s", r.URL)
+			w.WriteHeader(http.StatusOK)
+		}
 	}
 }
