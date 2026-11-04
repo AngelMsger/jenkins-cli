@@ -177,6 +177,21 @@ else
   echo "FAIL - stop on a permalink posts to the build number (server saw: $(tr '\n' ';' <"$WRITE_LOG"))"; exit 1
 fi
 
+# Jenkins acknowledges a cancel with a redirect to the queue page (the mock
+# answers a stop and a cancel like Jenkins): that redirect is the success.
+check "queue cancel accepts Jenkins' redirect" '"cancelled": true' -- run queue cancel 77
+
+# Any other redirect of a write (here a single sign-on proxy's login page)
+# says nothing about it: the outcome is unknown, with the redirect's status.
+sso_err="$(run build stop sso 3 2>&1 >/dev/null || true)"
+if [[ "$sso_err" == *"Write outcome is unknown for build 3 of job sso"* &&
+      "$sso_err" == *'"http_status": 302'* && "$sso_err" == *"answered it with a redirect"* ]]; then
+  echo "ok   - a write redirected to a login page is an unknown outcome"
+  pass=$((pass + 1))
+else
+  echo "FAIL - a write redirected to a login page is an unknown outcome"; echo "$sso_err" | head -12; exit 1
+fi
+
 # Read-only mode is the user's setting: the error offers --allow-writes only for
 # an authorized write and never tells an agent to unset the switch.
 ro_err="$(JENKINS_CLI_READ_ONLY=1 run job build app 2>&1 >/dev/null || true)"

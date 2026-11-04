@@ -17,10 +17,12 @@ import (
 // reconciles before it triggers a second build. Each target names what the
 // write changes and a bounded, read-only command that shows it.
 
-// postWrite sends a write and classifies its failure with the write rule. The
+// postWrite sends a write and classifies its failure with the write rule. ack
+// accepts a non-2xx answer that acknowledges the write (see postForm). The
 // caller must close the returned body.
-func (c *apiClient) postWrite(ctx context.Context, path string, form url.Values, target cerrors.WriteTarget) (*http.Response, error) {
-	resp, err := c.postForm(ctx, path, form)
+func (c *apiClient) postWrite(ctx context.Context, path string, form url.Values, target cerrors.WriteTarget,
+	ack func(*http.Response) bool) (*http.Response, error) {
+	resp, err := c.postForm(ctx, path, form, ack)
 	if err != nil {
 		return nil, cerrors.FromWrite(err, target)
 	}

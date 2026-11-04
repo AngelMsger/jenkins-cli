@@ -86,11 +86,13 @@ fi
   `queue cancel`) was blocked because the session is read-only. Preview with
   `--dry-run`; use `--allow-writes` only for a write the user authorized.
 - **"Write outcome is unknown for …"** — a write failed after it may have
-  reached Jenkins (timeout, network error, 429, 5xx). It is `retryable=false`:
-  a second `job build` could start a second build. Run the reads in
-  `next_steps` (`queue list` and `build list` for a trigger, `build get` for a
-  stop, `queue get` for a cancel) and repeat the write only if they show it did
-  not happen.
+  reached Jenkins (timeout, network error, 429, 5xx, or a redirect). It is
+  `retryable=false`: a second `job build` could start a second build. Run the
+  reads in `next_steps` (`queue list` and `build list` for a trigger,
+  `build get` for a stop, `queue get` for a cancel) and repeat the write only
+  if they show it did not happen. A 3xx `http_status` usually means a login
+  page, a single sign-on proxy or an `http` base URL that should be `https`:
+  check the base URL with `doctor` before any retry.
 - **`WRITE_SUCCEEDED_RESPONSE_INVALID`** — Jenkins accepted `job build` but
   named no queue item, so the build is queued and unidentified. Find it with
   the reads in `next_steps`; never trigger again.
