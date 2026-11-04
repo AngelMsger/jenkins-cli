@@ -78,8 +78,10 @@ implementation. One file per resource: `jobs.go`, `builds.go`, `console.go`,
   attaching a CSRF crumb fetched (once, cached) from `/crumbIssuer/api/json` — a
   404 there means CSRF is disabled and the POST proceeds crumbless. Only a 2xx
   acknowledges a write, except Jenkins' own acknowledgment of a stop or cancel
-  (below). The kit's transport never follows a write's redirect, so `postForm`
-  sees it.
+  (below). The kit's transport answers a write with its first response, so
+  `postForm` sees a write's redirect, whatever HTTP client a library caller
+  passes: the default one never follows it, and when the caller's own client
+  follows it, the transport still returns the redirect it began with.
 - Writes follow the family's write-outcome rule from agent-cli-kit
   (`errors.FromWrite`): each goes through `postWrite` with a write target
   (`write_targets.go`) naming what it changes and the bounded reads that show
