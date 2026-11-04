@@ -219,7 +219,8 @@ func (c *apiClient) postForm(ctx context.Context, path string, form url.Values, 
 // /job/app/42/stop, /queue/ for /queue/cancelItem).
 //
 // The Location must name the request's own host and that directory, with no
-// query. Its scheme and port are not compared: the servlet container builds
+// query and no fragment (a fragment-routed login page can sit at the same
+// path). Its scheme and port are not compared: the servlet container builds
 // the absolute Location from its own view of them, which behind a proxy that
 // terminates TLS is often http and the container's port. A login page or a
 // single sign-on proxy redirects to another path or another host, and an
@@ -239,7 +240,7 @@ func forwardedToPreviousPage(resp *http.Response) bool {
 	req := resp.Request.URL
 	p := req.Path
 	return strings.EqualFold(loc.Hostname(), req.Hostname()) && loc.RawQuery == "" &&
-		loc.Path == p[:strings.LastIndex(p, "/")+1]
+		loc.Fragment == "" && loc.Path == p[:strings.LastIndex(p, "/")+1]
 }
 
 // crumb fetches (once, then caches) the CSRF crumb required for POST requests.

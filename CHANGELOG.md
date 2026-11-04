@@ -55,8 +55,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   succeeded … but no queue item"; a `build stop` or `queue cancel` redirected
   to a login page read as done; and a 307 or 308 sent the write again to the
   new location. A stop or cancel is still a success when Jenkins answers it
-  with its own redirect to the build or queue page on the same host; the
-  same path on another host (a single sign-on proxy) is an unknown outcome.
+  with its own redirect to the build or queue page on the same host, with no
+  query or fragment; the same path on another host (a single sign-on proxy)
+  or with a fragment (a fragment-routed login page) is an unknown outcome.
 - `build stop <path> last` (or another permalink) resolves the permalink to
   its build number first and stops that build. It used to post to the
   permalink and, after an uncertain stop, name `build get <path> last`, which

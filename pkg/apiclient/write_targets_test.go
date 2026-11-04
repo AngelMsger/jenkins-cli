@@ -341,6 +341,8 @@ func TestStopAndCancelOtherRedirectsAreUnknownOutcomes(t *testing.T) {
 		{"cancel, sign-on host at the queue path", "https://sso.example/queue/?login=1", http.StatusFound, cancelItem77},
 		{"stop, sign-on host at the build path", "https://sso.example/job/app/7/", http.StatusFound, stopBuild7},
 		{"stop, build page with a query", "/job/app/7/?from=login", http.StatusFound, stopBuild7},
+		{"stop, fragment-routed login at the build path", "/job/app/7/#/login", http.StatusFound, stopBuild7},
+		{"cancel, fragment-routed login at the queue path", "/queue/#/login", http.StatusFound, cancelItem77},
 		{"stop, container's internal host", "http://jenkins.internal:8080/job/app/7/", http.StatusFound, stopBuild7},
 	}
 	for _, tc := range cases {

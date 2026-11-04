@@ -97,7 +97,8 @@ implementation. One file per resource: `jobs.go`, `builds.go`, `console.go`,
   `forwardToPreviousPage`: with no `Referer`, a 302 to "." of the request, the
   build page for `/job/<path>/<n>/stop` and `/queue/` for `/queue/cancelItem`.
   `forwardedToPreviousPage` accepts a 302 or 303 whose `Location` names the
-  request's own host and that directory, with no query. It ignores the scheme
+  request's own host and that directory, with no query and no fragment (a
+  fragment-routed login page can sit at the same path). It ignores the scheme
   and port, which the servlet container fills in from its own view (often
   `http` and the container's port behind a TLS proxy). Any other redirect,
   including a 307 or 308, one to another host at the same path (a single
