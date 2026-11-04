@@ -98,7 +98,10 @@ implementation. One file per resource: `jobs.go`, `builds.go`, `console.go`,
   that reconciles an uncertain stop name the same build even when a newer one
   starts meanwhile. `Client.StopBuild` does this itself and keeps its released
   `error`-only signature; the CLI calls `apiclient.StopBuildNumber`, which
-  also returns the number for the output. `pkg/apiclient/compat_test.go` pins
+  also returns the number for the output. Given another `Client` (a library
+  caller's fake or decorator), `StopBuildNumber` resolves with `GetBuild`,
+  stops by number and passes the stop's error through `errors.FromWrite`, so
+  a retryable failure never invites a second stop. `pkg/apiclient/compat_test.go` pins
   the `Reader` and `Writer` method sets, so a signature change fails to
   compile. The `--dry-run` preview is offline, so it keeps the permalink in its
   URL.

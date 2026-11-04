@@ -16,7 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `apiclient.StopBuildNumber(ctx, client, path, ref)` stops a build like
   `Client.StopBuild` and also returns the number it stopped, resolving a
   permalink such as `last` once, before the stop. `Client.StopBuild` keeps its
-  signature.
+  signature. With a `Client` this package did not build, it reads the build
+  with `GetBuild`, stops it by number, and reports a failed stop by the write
+  rule like the package's own clients.
 
 ### Changed
 
