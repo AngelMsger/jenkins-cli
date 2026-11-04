@@ -55,7 +55,8 @@ alone cannot tell whether tests ran, passed or failed before publishing results.
 
 Use the write authorization and scope rules in the main Skill. Inspect `job get`
 for supported parameters before triggering; use the exact running build number
-or queue id for a stop/cancel. Preview the intended write with `--dry-run`,
+or queue id for a stop/cancel. A permalink such as `last` is resolved to its
+number before the stop is sent, and the output names that number. Preview the intended write with `--dry-run`,
 then perform the authorized action once:
 
 ```bash
@@ -74,7 +75,9 @@ uncertain, inspect state before retrying to avoid triggering duplicate builds.
 
 ## Follow the triggered build
 
-A successful `job build` returns `queue.queue_id` and `queue.queue_url`. Poll
+A successful `job build` returns `queue.queue_id` and `queue.queue_url` (when
+Jenkins names no queue item, it fails with `WRITE_SUCCEEDED_RESPONSE_INVALID`:
+the build was queued, so find it with `queue list` instead of triggering again). Poll
 that id with `queue get <id>` at a bounded interval (for example, every five
 seconds for up to a minute):
 

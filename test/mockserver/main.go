@@ -81,6 +81,12 @@ func route(w http.ResponseWriter, r *http.Request) {
 	// Writes: trigger / stop / cancel.
 	if r.Method == http.MethodPost {
 		switch {
+		case path == "/job/no-location/build":
+			// Jenkins accepted the build but named no queue item.
+			w.WriteHeader(http.StatusCreated)
+		case path == "/job/unavailable/build":
+			// A trigger that fails after it was sent: the outcome is unknown.
+			http.Error(w, "service unavailable", http.StatusServiceUnavailable)
 		case strings.HasSuffix(path, "/build"), strings.HasSuffix(path, "/buildWithParameters"):
 			w.Header().Set("Location", "http://"+r.Host+"/queue/item/77/")
 			w.WriteHeader(http.StatusCreated)

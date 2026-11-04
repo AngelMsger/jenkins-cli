@@ -2,9 +2,12 @@ package apiclient
 
 import (
 	"context"
+	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
-	"strings"
+
+	cerrors "github.com/angelmsger/jenkins-cli/pkg/errors"
 )
 
 // buildEndpoint returns the trigger path for a job and whether parameters are
@@ -26,31 +29,126 @@ func paramForm(params map[string]string) url.Values {
 
 // TriggerBuild starts a build of a job. With parameters it posts to
 // buildWithParameters; without, to build. It returns a pointer to the queue
-// item created (parsed from the Location header).
+// item created, parsed from the Location header. Jenkins accepted the build
+// once it answers, so a response without a queue item location reports the
+// write as done but unidentified, never as something to send again.
 func (c *apiClient) TriggerBuild(ctx context.Context, path string, params map[string]string) (*QueueRef, error) {
-	resp, err := c.postForm(ctx, buildEndpoint(path, len(params) > 0), paramForm(params))
+	target := triggerWriteTarget(path)
+	resp, err := c.postWrite(ctx, buildEndpoint(path, len(params) > 0), paramForm(params), target)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	// Jenkins answers a trigger itself (201 and a Location), never with a
+	// redirect. One that was followed turned the POST into a GET, so the
+	// response came from that GET (often a login page), and whether the build
+	// was queued is unknown.
+	if resp.Request != nil && resp.Request.Method != http.MethodPost {
+		return nil, cerrors.FromWrite(redirectedTrigger(resp), target)
+	}
 	ref := &QueueRef{QueueURL: resp.Header.Get("Location")}
 	ref.QueueID = parseQueueID(ref.QueueURL)
+	if ref.QueueID == 0 {
+		return nil, cerrors.MissingWriteIdentity(target)
+	}
 	return ref, nil
 }
 
-// StopBuild aborts a running build.
+// redirectedTrigger is the cause of a trigger whose response came from a
+// followed redirect. The same request is redirected the same way again, so it
+// is not retryable.
+func redirectedTrigger(resp *http.Response) error {
+	e := cerrors.Newf(cerrors.CategoryServer, "HTTP_REDIRECTED",
+		"Jenkins redirected the POST request to %s", resp.Request.URL.Redacted()).
+		WithHint("A redirect after a trigger usually means a login page, a single sign-on proxy, " +
+			"or a base URL that should use https. Check --base-url, then run doctor.")
+	e.Retryable = false
+	return e
+}
+
+// StopBuild aborts a running build; see stopBuildNumber.
 func (c *apiClient) StopBuild(ctx context.Context, path, ref string) error {
-	resp, err := c.postForm(ctx, jobPath(path)+"/"+buildRef(ref)+"/stop", nil)
+	_, err := c.stopBuildNumber(ctx, path, ref)
+	return err
+}
+
+// StopBuildNumber stops the build ref names, as c.StopBuild does, and returns
+// its number. A permalink such as last names whichever build is newest when
+// it is read, so it is resolved once, before the stop: the number returned
+// is the build that was stopped even when a newer one has started since.
+//
+// The clients this package builds, read-only ones included, resolve and stop
+// in one call. Any other Client is asked for the build with GetBuild, then
+// stopped by its number.
+func StopBuildNumber(ctx context.Context, c Client, path, ref string) (int, error) {
+	if s, ok := c.(numberStopper); ok {
+		return s.stopBuildNumber(ctx, path, ref)
+	}
+	n, err := strconv.Atoi(buildRef(ref))
 	if err != nil {
-		return err
+		b, err := c.GetBuild(ctx, path, ref)
+		if err != nil {
+			return 0, err
+		}
+		if n = b.Number; n <= 0 {
+			return 0, noBuild(path, ref)
+		}
+	}
+	return n, c.StopBuild(ctx, path, strconv.Itoa(n))
+}
+
+// numberStopper is implemented by the clients this package builds, so
+// StopBuildNumber needs no extra read.
+type numberStopper interface {
+	stopBuildNumber(ctx context.Context, path, ref string) (int, error)
+}
+
+// stopBuildNumber resolves ref to a build number, so the stop, and the read
+// that reconciles an uncertain stop, name the same build even when a newer
+// one starts in between, then stops that build.
+func (c *apiClient) stopBuildNumber(ctx context.Context, path, ref string) (int, error) {
+	n, err := c.buildNumber(ctx, path, ref)
+	if err != nil {
+		return 0, err
+	}
+	num := strconv.Itoa(n)
+	resp, err := c.postWrite(ctx, jobPath(path)+"/"+num+"/stop", nil, buildWriteTarget(path, num))
+	if err != nil {
+		return 0, err
 	}
 	resp.Body.Close()
-	return nil
+	return n, nil
+}
+
+// buildNumber resolves a build ref to its number. A number is returned as is;
+// a permalink is read from Jenkins.
+func (c *apiClient) buildNumber(ctx context.Context, path, ref string) (int, error) {
+	r := buildRef(ref)
+	if n, err := strconv.Atoi(r); err == nil {
+		return n, nil
+	}
+	var rb struct {
+		Number int `json:"number"`
+	}
+	if err := c.getJSON(ctx, jobPath(path)+"/"+r+"/api/json", url.Values{"tree": {"number"}}, &rb); err != nil {
+		return 0, err
+	}
+	if rb.Number <= 0 {
+		return 0, noBuild(path, ref)
+	}
+	return rb.Number, nil
+}
+
+// noBuild reports a permalink that names no build of the job yet.
+func noBuild(path, ref string) error {
+	return cerrors.Newf(cerrors.CategoryNotFound, "BUILD_NOT_FOUND",
+		"job %s has no build for %q", pathDisplay(path), ref).
+		WithNextSteps("jenkins-cli build list " + cerrors.ShellArg(path) + " --limit 5")
 }
 
 // CancelQueueItem removes a still-queued build before it starts.
 func (c *apiClient) CancelQueueItem(ctx context.Context, id int) error {
-	resp, err := c.postForm(ctx, "/queue/cancelItem", url.Values{"id": {strconv.Itoa(id)}})
+	resp, err := c.postWrite(ctx, "/queue/cancelItem", url.Values{"id": {strconv.Itoa(id)}}, queueWriteTarget(id))
 	if err != nil {
 		return err
 	}
@@ -58,14 +156,23 @@ func (c *apiClient) CancelQueueItem(ctx context.Context, id int) error {
 	return nil
 }
 
-// parseQueueID extracts the trailing numeric id from a queue item URL such as
-// "http://host/queue/item/42/".
+// queueItemPath matches a queue item's path, under any context path Jenkins
+// is served from ("/jenkins/queue/item/42/").
+var queueItemPath = regexp.MustCompile(`/queue/item/([0-9]+)/?$`)
+
+// parseQueueID extracts the id from a queue item URL such as
+// "http://host/queue/item/42/". Any other URL, such as a build or job page
+// that merely ends in a number, yields 0: it does not name a queue item.
 func parseQueueID(loc string) int {
-	loc = strings.Trim(loc, "/")
-	if i := strings.LastIndex(loc, "/"); i >= 0 {
-		loc = loc[i+1:]
+	u, err := url.Parse(loc)
+	if err != nil {
+		return 0
 	}
-	n, _ := strconv.Atoi(loc)
+	m := queueItemPath.FindStringSubmatch(u.Path)
+	if m == nil {
+		return 0
+	}
+	n, _ := strconv.Atoi(m[1])
 	return n
 }
 
@@ -79,7 +186,9 @@ func TriggerBuildPlan(baseURL, path string, params map[string]string) WritePlan 
 	return p
 }
 
-// StopBuildPlan returns the WritePlan a StopBuild call would execute.
+// StopBuildPlan returns the WritePlan a StopBuild call would execute. It is
+// built offline, so a permalink such as last stays in the URL; StopBuild
+// resolves it to the build's number when it sends the stop.
 func StopBuildPlan(baseURL, path, ref string) WritePlan {
 	return WritePlan{DryRun: true, Method: "POST", URL: baseURL + jobPath(path) + "/" + buildRef(ref) + "/stop"}
 }

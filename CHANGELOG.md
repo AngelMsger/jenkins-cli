@@ -10,7 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `pkg/apiclient` exports `Reader` and `Writer`; `Client` is now their union,
-  with the same method set and signatures as before.
+  with the same method set and signatures as before. A compile-time test pins
+  both method sets, so a change that would break library callers or
+  implementations fails the build.
+- `apiclient.StopBuildNumber(ctx, client, path, ref)` stops a build like
+  `Client.StopBuild` and also returns the number it stopped, resolving a
+  permalink such as `last` once, before the stop. `Client.StopBuild` keeps its
+  signature.
 
 ### Changed
 
@@ -18,9 +24,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   each `Writer` method itself, so a write added without a blocking override
   fails to compile instead of reaching Jenkins in a read-only session. No CLI
   behavior, output or error changes.
+- A write that fails after it may have reached Jenkins (timeout, network
+  error, 429, 5xx, redirect) now reports "Write outcome is unknown for …",
+  `retryable: false`, and the reads that show the result as `next_steps`
+  (`queue list` and `build list` after `job build`, `build get` after
+  `build stop`, `queue get` after `queue cancel`), instead of a retryable error
+  that invited a second build. Definite refusals such as 403 and 404 are
+  unchanged. This is agent-cli-kit v0.6.0's shared write rule.
+- `READONLY_BLOCKED` uses agent-cli-kit's shared wording: the message reads
+  `operation "trigger a build" blocked: read-only mode is enabled`, the hint
+  says read-only mode is the user's setting, and the next steps are
+  `--dry-run` and, only for a write the user authorized, `--allow-writes`.
+- Prompts (`auth login`, `config init`) use agent-cli-kit's
+  `terminal.Prompter`; their wording is unchanged.
 
 ### Fixed
 
+- `job build` no longer reports success with an empty `queue` when Jenkins
+  answers without a queue item `Location`. The build was queued, so it fails
+  with `WRITE_SUCCEEDED_RESPONSE_INVALID` and names `queue list` to find it.
+  Only a URL whose path ends in `/queue/item/<n>/` counts as a queue item; a
+  build or job page that merely ends in a number used to be read as one.
+- `job build` answered through a redirect (a login page or single sign-on
+  proxy, or `http` to `https`) is an unknown outcome caused by
+  `HTTP_REDIRECTED`, instead of "Write succeeded … but no queue item": the
+  HTTP client followed the redirect with a GET, so the page it landed on said
+  nothing about the build.
+- `build stop <path> last` (or another permalink) resolves the permalink to
+  its build number first and stops that build. It used to post to the
+  permalink and, after an uncertain stop, name `build get <path> last`, which
+  could by then show a newer build. The output's `build` is now the number.
 - Mask passwords embedded in the server URL in `--verbose` request logs, with
   agent-cli-kit v0.6.0's transport.
 

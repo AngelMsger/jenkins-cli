@@ -76,6 +76,18 @@ func TestReadOnlyBlocksEveryWrite(t *testing.T) {
 	}
 }
 
+// StopBuildNumber resolves a permalink with a read before it stops. On a
+// read-only client it is blocked before that read, like StopBuild.
+func TestReadOnlyBlocksStopBuildNumber(t *testing.T) {
+	inner, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		t.Errorf("read-only client must not send a request (%s %s)", r.Method, r.URL.Path)
+	})
+	_, err := StopBuildNumber(context.Background(), NewReadOnly(inner), "app", "last")
+	if ce := cerrors.AsCLIError(err); ce == nil || ce.Code != "READONLY_BLOCKED" || !strings.Contains(ce.Message, "stop a build") {
+		t.Fatalf("got %+v; want READONLY_BLOCKED for stop a build", ce)
+	}
+}
+
 // readCall is one call a recordingReader received.
 type readCall struct {
 	method string

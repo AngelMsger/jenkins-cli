@@ -49,9 +49,9 @@ itself, returning a structured error instead of issuing a request:
   "error": {
     "category": "permission",
     "code": "READONLY_BLOCKED",
-    "message": "refusing to trigger a build: read-only mode is enabled",
-    "hint": "This session is read-only. Preview the request with --dry-run, or re-run with --allow-writes to override.",
-    "next_steps": ["Add --dry-run to preview the request without sending it", "Add --allow-writes to override read-only mode for this command"],
+    "message": "operation \"trigger a build\" blocked: read-only mode is enabled",
+    "hint": "Read-only mode is on, so nothing was sent. The user turned it on (JENKINS_CLI_READ_ONLY or defaults.read_only in ~/.angelmsger/jenkins/config.yaml), and only the user turns it off. --allow-writes lifts it for one invocation and is for a write the user authorized.",
+    "next_steps": ["Add --dry-run to preview the request without sending it", "Only if the user authorized this write, re-run with --allow-writes"],
     "retryable": false
   }
 }

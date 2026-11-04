@@ -85,7 +85,9 @@ type Writer interface {
 	// TriggerBuild starts a build of a job, with optional parameters. It returns
 	// a pointer to the resulting queue item.
 	TriggerBuild(ctx context.Context, path string, params map[string]string) (*QueueRef, error)
-	// StopBuild aborts a running build.
+	// StopBuild aborts a running build. A permalink such as last is resolved
+	// to its build number before the stop is sent; StopBuildNumber also
+	// returns that number.
 	StopBuild(ctx context.Context, path, ref string) error
 	// CancelQueueItem removes a still-queued build before it starts.
 	CancelQueueItem(ctx context.Context, id int) error
@@ -200,7 +202,10 @@ func (c *apiClient) postForm(ctx context.Context, path string, form url.Values) 
 		return nil, cerrors.Wrap(err, cerrors.CategoryNetwork, "NETWORK",
 			fmt.Sprintf("request to %s failed", c.baseURL+path))
 	}
-	if resp.StatusCode >= 400 {
+	// Only a 2xx acknowledges a write: Jenkins answers a trigger with 201 and a
+	// queue location, and the redirect after a stop or cancel is followed to
+	// its 200 page.
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		defer resp.Body.Close()
 		return nil, c.httpError(resp, path)
 	}

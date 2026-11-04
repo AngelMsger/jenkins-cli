@@ -167,6 +167,50 @@ else
   echo "FAIL - write log records --allow-writes requests"; exit 1
 fi
 
+# A permalink is resolved to its build number before the stop, so the build
+# stopped and the one named in the output are the same even if a newer starts.
+check "build stop resolves last" '"build": "7"' -- run build stop app last
+if grep -qx "POST /job/app/7/stop" "$WRITE_LOG"; then
+  echo "ok   - stop on a permalink posts to the build number"
+  pass=$((pass + 1))
+else
+  echo "FAIL - stop on a permalink posts to the build number (server saw: $(tr '\n' ';' <"$WRITE_LOG"))"; exit 1
+fi
+
+# Read-only mode is the user's setting: the error offers --allow-writes only for
+# an authorized write and never tells an agent to unset the switch.
+ro_err="$(JENKINS_CLI_READ_ONLY=1 run job build app 2>&1 >/dev/null || true)"
+if [[ "$ro_err" == *"Only if the user authorized this write"* && "$ro_err" != *"unset JENKINS_CLI_READ_ONLY"* ]]; then
+  echo "ok   - read-only error leaves the switch to the user"
+  pass=$((pass + 1))
+else
+  echo "FAIL - read-only error leaves the switch to the user"; echo "$ro_err" | head -8; exit 1
+fi
+
+# A trigger that fails after it was sent may have queued the build: the error
+# says the outcome is unknown, is not retryable and names the reads.
+write_err="$(run job build unavailable 2>&1 >/dev/null || true)"
+if [[ "$write_err" == *"Write outcome is unknown for build of job unavailable"* &&
+      "$write_err" == *'"retryable": false'* && "$write_err" == *"jenkins-cli queue list"* ]]; then
+  echo "ok   - failed trigger reports an unknown outcome"
+  pass=$((pass + 1))
+else
+  echo "FAIL - failed trigger reports an unknown outcome"; echo "$write_err" | head -8; exit 1
+fi
+
+# Jenkins accepted the build but named no queue item: the build was queued, so
+# the error says so instead of reporting success with no queue ref.
+set +e
+noloc_err="$(run job build no-location 2>&1 >/dev/null)"; code=$?
+set -e
+if [[ "$code" -ne 0 && "$noloc_err" == *'"code": "WRITE_SUCCEEDED_RESPONSE_INVALID"'* &&
+      "$noloc_err" == *"Write succeeded for build of job no-location"* ]]; then
+  echo "ok   - trigger without a queue location is reported"
+  pass=$((pass + 1))
+else
+  echo "FAIL - trigger without a queue location is reported (exit $code)"; echo "$noloc_err" | head -8; exit 1
+fi
+
 # Exit-code contract: missing required path arg -> usage (2).
 set +e
 run build get >/dev/null 2>&1; code=$?
