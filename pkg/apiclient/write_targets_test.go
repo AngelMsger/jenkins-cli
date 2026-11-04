@@ -2,6 +2,7 @@ package apiclient
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 	"testing"
@@ -228,6 +229,21 @@ func TestStopBuildNumberClassifiesAnotherClientsStop(t *testing.T) {
 	f := &foreignClient{stopErr: refused}
 	if _, err := StopBuildNumber(context.Background(), f, "app", "7"); err != refused {
 		t.Fatalf("got %v; want the refusal unchanged", err)
+	}
+}
+
+// A decorator around one of this package's clients is a foreign Client too.
+// Its stop already reports the write outcome, so StopBuildNumber's own
+// classification leaves it as it is instead of nesting it in a second one.
+func TestStopBuildNumberThroughADecorator(t *testing.T) {
+	inner, _ := newTestClient(t, writeHandler(http.StatusServiceUnavailable))
+	decorated := struct{ Client }{inner}
+	_, err := StopBuildNumber(context.Background(), decorated, "app", "12")
+	ce := cerrors.AsCLIError(err)
+	if ce == nil || ce.Retryable ||
+		!strings.HasPrefix(ce.Message, "Write outcome is unknown for build 12 of job app") ||
+		strings.Count(ce.Message, "Write outcome is unknown") != 1 {
+		t.Fatalf("got %+v; want one unknown outcome naming build 12", ce)
 	}
 }
 
