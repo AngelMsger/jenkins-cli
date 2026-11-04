@@ -35,8 +35,7 @@ func TestWriteFailuresAreUnknownOutcomes(t *testing.T) {
 			return err
 		}, triggerWriteTarget("team/app")},
 		{"stop", func(c Client) error {
-			_, err := c.StopBuild(context.Background(), "team/app", "7")
-			return err
+			return c.StopBuild(context.Background(), "team/app", "7")
 		}, buildWriteTarget("team/app", "7")},
 		{"cancel", func(c Client) error {
 			return c.CancelQueueItem(context.Background(), 77)
@@ -64,7 +63,7 @@ func TestWriteFailuresAreUnknownOutcomes(t *testing.T) {
 // guidance.
 func TestWriteRefusalPassesThrough(t *testing.T) {
 	c, _ := newTestClient(t, writeHandler(http.StatusNotFound))
-	_, err := c.StopBuild(context.Background(), "app", "7")
+	err := c.StopBuild(context.Background(), "app", "7")
 	ce := cerrors.AsCLIError(err)
 	if ce.Category != cerrors.CategoryNotFound || strings.Contains(ce.Message, "Write outcome") {
 		t.Fatalf("got %s %q; want the 404 unchanged", ce.Category, ce.Message)
@@ -122,36 +121,83 @@ func TestTriggerReturnsTheQueueItem(t *testing.T) {
 // uncertain stop, which by then could show a newer build. The ref is resolved
 // to its number first, so the stop and the read name the same build.
 func TestStopResolvesAPermalink(t *testing.T) {
-	for name, status := range map[string]int{"stopped": http.StatusOK, "uncertain": http.StatusServiceUnavailable} {
-		t.Run(name, func(t *testing.T) {
-			var posts []string
-			c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
-				switch {
-				case r.Method == http.MethodPost:
-					posts = append(posts, r.URL.Path)
-					w.WriteHeader(status)
-				case r.URL.Path == "/job/app/lastBuild/api/json":
-					w.Write([]byte(`{"number":12}`))
-				default:
-					w.Write([]byte(`{"crumbRequestField":"Jenkins-Crumb","crumb":"c"}`))
+	stops := map[string]func(Client) (int, error){
+		"StopBuildNumber": func(c Client) (int, error) {
+			return StopBuildNumber(context.Background(), c, "app", "last")
+		},
+		// A library caller of StopBuild gets the same build stopped.
+		"StopBuild": func(c Client) (int, error) {
+			return 12, c.StopBuild(context.Background(), "app", "last")
+		},
+	}
+	for stopName, stop := range stops {
+		for name, status := range map[string]int{"stopped": http.StatusOK, "uncertain": http.StatusServiceUnavailable} {
+			t.Run(stopName+" "+name, func(t *testing.T) {
+				var posts []string
+				c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+					switch {
+					case r.Method == http.MethodPost:
+						posts = append(posts, r.URL.Path)
+						w.WriteHeader(status)
+					case r.URL.Path == "/job/app/lastBuild/api/json":
+						w.Write([]byte(`{"number":12}`))
+					default:
+						w.Write([]byte(`{"crumbRequestField":"Jenkins-Crumb","crumb":"c"}`))
+					}
+				})
+				n, err := stop(c)
+				if len(posts) != 1 || posts[0] != "/job/app/12/stop" {
+					t.Fatalf("stop requests %q; want /job/app/12/stop", posts)
+				}
+				if status == http.StatusOK {
+					if err != nil || n != 12 {
+						t.Fatalf("got %d, %v; want build 12 stopped", n, err)
+					}
+					return
+				}
+				ce := cerrors.AsCLIError(err)
+				if ce == nil || !strings.HasPrefix(ce.Message, "Write outcome is unknown for build 12 of job app") ||
+					len(ce.NextSteps) == 0 || ce.NextSteps[0] != "jenkins-cli build get 'app' '12'" {
+					t.Fatalf("got %+v; want an unknown outcome naming build 12", ce)
 				}
 			})
-			n, err := c.StopBuild(context.Background(), "app", "last")
-			if len(posts) != 1 || posts[0] != "/job/app/12/stop" {
-				t.Fatalf("stop requests %q; want /job/app/12/stop", posts)
-			}
-			if status == http.StatusOK {
-				if err != nil || n != 12 {
-					t.Fatalf("got %d, %v; want build 12 stopped", n, err)
-				}
-				return
-			}
-			ce := cerrors.AsCLIError(err)
-			if ce == nil || !strings.HasPrefix(ce.Message, "Write outcome is unknown for build 12 of job app") ||
-				len(ce.NextSteps) == 0 || ce.NextSteps[0] != "jenkins-cli build get 'app' '12'" {
-				t.Fatalf("got %+v; want an unknown outcome naming build 12", ce)
-			}
-		})
+		}
+	}
+}
+
+// foreignClient is a Client this package did not build, such as a library
+// caller's fake. Only the methods StopBuildNumber may call are implemented.
+type foreignClient struct {
+	Client
+	build   *Build
+	stopped []string
+}
+
+func (f *foreignClient) GetBuild(_ context.Context, path, ref string) (*Build, error) {
+	return f.build, nil
+}
+
+func (f *foreignClient) StopBuild(_ context.Context, path, ref string) error {
+	f.stopped = append(f.stopped, path+"#"+ref)
+	return nil
+}
+
+// StopBuildNumber works with any Client: it reads the build a permalink names
+// with GetBuild, then stops it by number. A number needs no read.
+func TestStopBuildNumberWithAnotherClient(t *testing.T) {
+	f := &foreignClient{build: &Build{Number: 12}}
+	if n, err := StopBuildNumber(context.Background(), f, "app", "last"); err != nil || n != 12 ||
+		len(f.stopped) != 1 || f.stopped[0] != "app#12" {
+		t.Fatalf("got %d, %v, stops %q; want build 12 stopped by number", n, err, f.stopped)
+	}
+	f = &foreignClient{}
+	if n, err := StopBuildNumber(context.Background(), f, "app", "7"); err != nil || n != 7 || f.stopped[0] != "app#7" {
+		t.Fatalf("got %d, %v, stops %q; want build 7 stopped without a read", n, err, f.stopped)
+	}
+	f = &foreignClient{build: &Build{}}
+	_, err := StopBuildNumber(context.Background(), f, "app", "lastFailed")
+	if ce := cerrors.AsCLIError(err); ce == nil || ce.Code != "BUILD_NOT_FOUND" || len(f.stopped) != 0 {
+		t.Fatalf("got %+v, stops %q; want BUILD_NOT_FOUND and no stop", ce, f.stopped)
 	}
 }
 

@@ -47,7 +47,7 @@ func TestReadOnlyBlocksEveryWrite(t *testing.T) {
 			_, err := c.TriggerBuild(ctx, "app", map[string]string{"BRANCH": "main"})
 			return err
 		}},
-		{"StopBuild", "stop a build", func() error { _, err := c.StopBuild(ctx, "app", "5"); return err }},
+		{"StopBuild", "stop a build", func() error { return c.StopBuild(ctx, "app", "5") }},
 		{"CancelQueueItem", "cancel a queue item", func() error { return c.CancelQueueItem(ctx, 1) }},
 	}
 	var names []string
@@ -73,6 +73,18 @@ func TestReadOnlyBlocksEveryWrite(t *testing.T) {
 				t.Errorf("%s: next_steps missing --allow-writes hint: %v", tc.name, ce.NextSteps)
 			}
 		})
+	}
+}
+
+// StopBuildNumber resolves a permalink with a read before it stops. On a
+// read-only client it is blocked before that read, like StopBuild.
+func TestReadOnlyBlocksStopBuildNumber(t *testing.T) {
+	inner, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		t.Errorf("read-only client must not send a request (%s %s)", r.Method, r.URL.Path)
+	})
+	_, err := StopBuildNumber(context.Background(), NewReadOnly(inner), "app", "last")
+	if ce := cerrors.AsCLIError(err); ce == nil || ce.Code != "READONLY_BLOCKED" || !strings.Contains(ce.Message, "stop a build") {
+		t.Fatalf("got %+v; want READONLY_BLOCKED for stop a build", ce)
 	}
 }
 

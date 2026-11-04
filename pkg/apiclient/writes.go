@@ -66,11 +66,47 @@ func redirectedTrigger(resp *http.Response) error {
 	return e
 }
 
-// StopBuild aborts a running build and returns its number. A permalink such
-// as last names whichever build is newest when it is read, so it is resolved
-// to a number first: the stop, and the read that reconciles an uncertain
-// stop, then name the same build even when a newer one starts in between.
-func (c *apiClient) StopBuild(ctx context.Context, path, ref string) (int, error) {
+// StopBuild aborts a running build; see stopBuildNumber.
+func (c *apiClient) StopBuild(ctx context.Context, path, ref string) error {
+	_, err := c.stopBuildNumber(ctx, path, ref)
+	return err
+}
+
+// StopBuildNumber stops the build ref names, as c.StopBuild does, and returns
+// its number. A permalink such as last names whichever build is newest when
+// it is read, so it is resolved once, before the stop: the number returned
+// is the build that was stopped even when a newer one has started since.
+//
+// The clients this package builds, read-only ones included, resolve and stop
+// in one call. Any other Client is asked for the build with GetBuild, then
+// stopped by its number.
+func StopBuildNumber(ctx context.Context, c Client, path, ref string) (int, error) {
+	if s, ok := c.(numberStopper); ok {
+		return s.stopBuildNumber(ctx, path, ref)
+	}
+	n, err := strconv.Atoi(buildRef(ref))
+	if err != nil {
+		b, err := c.GetBuild(ctx, path, ref)
+		if err != nil {
+			return 0, err
+		}
+		if n = b.Number; n <= 0 {
+			return 0, noBuild(path, ref)
+		}
+	}
+	return n, c.StopBuild(ctx, path, strconv.Itoa(n))
+}
+
+// numberStopper is implemented by the clients this package builds, so
+// StopBuildNumber needs no extra read.
+type numberStopper interface {
+	stopBuildNumber(ctx context.Context, path, ref string) (int, error)
+}
+
+// stopBuildNumber resolves ref to a build number, so the stop, and the read
+// that reconciles an uncertain stop, name the same build even when a newer
+// one starts in between, then stops that build.
+func (c *apiClient) stopBuildNumber(ctx context.Context, path, ref string) (int, error) {
 	n, err := c.buildNumber(ctx, path, ref)
 	if err != nil {
 		return 0, err
@@ -98,11 +134,16 @@ func (c *apiClient) buildNumber(ctx context.Context, path, ref string) (int, err
 		return 0, err
 	}
 	if rb.Number <= 0 {
-		return 0, cerrors.Newf(cerrors.CategoryNotFound, "BUILD_NOT_FOUND",
-			"job %s has no build for %q", pathDisplay(path), ref).
-			WithNextSteps("jenkins-cli build list " + cerrors.ShellArg(path) + " --limit 5")
+		return 0, noBuild(path, ref)
 	}
 	return rb.Number, nil
+}
+
+// noBuild reports a permalink that names no build of the job yet.
+func noBuild(path, ref string) error {
+	return cerrors.Newf(cerrors.CategoryNotFound, "BUILD_NOT_FOUND",
+		"job %s has no build for %q", pathDisplay(path), ref).
+		WithNextSteps("jenkins-cli build list " + cerrors.ShellArg(path) + " --limit 5")
 }
 
 // CancelQueueItem removes a still-queued build before it starts.

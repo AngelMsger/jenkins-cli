@@ -96,8 +96,12 @@ implementation. One file per resource: `jobs.go`, `builds.go`, `console.go`,
 - `build stop` resolves a permalink (`last`, `lastFailed`, …) to its build
   number with a read before it posts the stop, so the stop and the `build get`
   that reconciles an uncertain stop name the same build even when a newer one
-  starts meanwhile. The `--dry-run` preview is offline, so it keeps the
-  permalink in its URL.
+  starts meanwhile. `Client.StopBuild` does this itself and keeps its released
+  `error`-only signature; the CLI calls `apiclient.StopBuildNumber`, which
+  also returns the number for the output. `pkg/apiclient/compat_test.go` pins
+  the `Reader` and `Writer` method sets, so a signature change fails to
+  compile. The `--dry-run` preview is offline, so it keeps the permalink in its
+  URL.
 - `factory.go`'s `BuildClient` normalizes the base URL and constructs the
   transport with the auth decorator. `readonly.go` is the read-only wrapper (see
   [read-only-mode.md](read-only-mode.md)).

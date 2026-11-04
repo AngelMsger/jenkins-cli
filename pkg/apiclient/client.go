@@ -85,9 +85,10 @@ type Writer interface {
 	// TriggerBuild starts a build of a job, with optional parameters. It returns
 	// a pointer to the resulting queue item.
 	TriggerBuild(ctx context.Context, path string, params map[string]string) (*QueueRef, error)
-	// StopBuild aborts a running build and returns its number; a permalink
-	// such as last is resolved to the number before the stop is sent.
-	StopBuild(ctx context.Context, path, ref string) (int, error)
+	// StopBuild aborts a running build. A permalink such as last is resolved
+	// to its build number before the stop is sent; StopBuildNumber also
+	// returns that number.
+	StopBuild(ctx context.Context, path, ref string) error
 	// CancelQueueItem removes a still-queued build before it starts.
 	CancelQueueItem(ctx context.Context, id int) error
 }

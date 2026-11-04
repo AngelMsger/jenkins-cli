@@ -31,7 +31,12 @@ func (r *readOnlyClient) TriggerBuild(context.Context, string, map[string]string
 	return nil, blocked("trigger a build")
 }
 
-func (r *readOnlyClient) StopBuild(context.Context, string, string) (int, error) {
+func (r *readOnlyClient) StopBuild(context.Context, string, string) error {
+	return blocked("stop a build")
+}
+
+// stopBuildNumber blocks StopBuildNumber before it reads anything.
+func (r *readOnlyClient) stopBuildNumber(context.Context, string, string) (int, error) {
 	return 0, blocked("stop a build")
 }
 

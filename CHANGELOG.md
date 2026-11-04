@@ -10,12 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `pkg/apiclient` exports `Reader` and `Writer`; `Client` is now their union,
-  with the same method set and signatures as before.
+  with the same method set and signatures as before. A compile-time test pins
+  both method sets, so a change that would break library callers or
+  implementations fails the build.
+- `apiclient.StopBuildNumber(ctx, client, path, ref)` stops a build like
+  `Client.StopBuild` and also returns the number it stopped, resolving a
+  permalink such as `last` once, before the stop. `Client.StopBuild` keeps its
+  signature.
 
 ### Changed
 
-- `Client.StopBuild` returns the stopped build's number along with the error,
-  for library callers.
 - The read-only wrapper keeps the inner client only as a `Reader` and blocks
   each `Writer` method itself, so a write added without a blocking override
   fails to compile instead of reaching Jenkins in a read-only session. No CLI

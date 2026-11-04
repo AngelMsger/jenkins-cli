@@ -214,7 +214,7 @@ func newBuildStopCmd(s *appState) *cobra.Command {
 			if dryRun {
 				return s.emit(apiclient.StopBuildPlan(client.BaseURL(), path, ref))
 			}
-			n, err := client.StopBuild(ctx, path, ref)
+			n, err := apiclient.StopBuildNumber(ctx, client, path, ref)
 			if err != nil {
 				return err
 			}
