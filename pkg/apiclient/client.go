@@ -218,11 +218,16 @@ func (c *apiClient) postForm(ctx context.Context, path string, form url.Values, 
 // directory its path is in (the build page /job/app/42/ for
 // /job/app/42/stop, /queue/ for /queue/cancelItem).
 //
-// Only the path is compared. The servlet container builds the absolute
-// Location from its own view of the scheme and host, which behind a proxy
-// that terminates TLS is often http and an internal name. A login page or a
-// single sign-on proxy redirects to another path, and an https upgrade keeps
-// the request's own path; neither is the request's directory.
+// The Location must name the request's own host and that directory, with no
+// query. Its scheme and port are not compared: the servlet container builds
+// the absolute Location from its own view of them, which behind a proxy that
+// terminates TLS is often http and the container's port. A login page or a
+// single sign-on proxy redirects to another path or another host, and an
+// https upgrade keeps the request's own path; none of them is the request's
+// directory on its host. A proxy that also leaks the container's internal
+// host name gets an unknown outcome, whose read shows the result: a redirect
+// that only looks like the acknowledgment must never report a stop or a
+// cancel that may not have reached Jenkins.
 func forwardedToPreviousPage(resp *http.Response) bool {
 	if resp.StatusCode != http.StatusFound && resp.StatusCode != http.StatusSeeOther {
 		return false
@@ -231,8 +236,10 @@ func forwardedToPreviousPage(resp *http.Response) bool {
 	if err != nil {
 		return false
 	}
-	p := resp.Request.URL.Path
-	return loc.Path == p[:strings.LastIndex(p, "/")+1]
+	req := resp.Request.URL
+	p := req.Path
+	return strings.EqualFold(loc.Hostname(), req.Hostname()) && loc.RawQuery == "" &&
+		loc.Path == p[:strings.LastIndex(p, "/")+1]
 }
 
 // crumb fetches (once, then caches) the CSRF crumb required for POST requests.

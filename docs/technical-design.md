@@ -96,10 +96,14 @@ implementation. One file per resource: `jobs.go`, `builds.go`, `console.go`,
   redirect's status. A stop or cancel is acknowledged by Stapler's
   `forwardToPreviousPage`: with no `Referer`, a 302 to "." of the request, the
   build page for `/job/<path>/<n>/stop` and `/queue/` for `/queue/cancelItem`.
-  `forwardedToPreviousPage` accepts a 302 or 303 whose `Location` path is that
-  directory. It ignores the host, which the servlet container fills in from
-  its own view (often `http` and an internal name behind a TLS proxy). Any
-  other redirect, including a 307 or 308, is an unknown outcome.
+  `forwardedToPreviousPage` accepts a 302 or 303 whose `Location` names the
+  request's own host and that directory, with no query. It ignores the scheme
+  and port, which the servlet container fills in from its own view (often
+  `http` and the container's port behind a TLS proxy). Any other redirect,
+  including a 307 or 308, one to another host at the same path (a single
+  sign-on proxy), and one to the container's internal host name, is an
+  unknown outcome: a redirect that only looks like the acknowledgment never
+  reports a stop or a cancel that may not have reached Jenkins.
 - `build stop` resolves a permalink (`last`, `lastFailed`, …) to its build
   number with a read before it posts the stop, so the stop and the `build get`
   that reconciles an uncertain stop name the same build even when a newer one

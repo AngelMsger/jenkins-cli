@@ -93,8 +93,10 @@ func TestTriggerWithoutQueueLocation(t *testing.T) {
 	}
 }
 
-// Only a 2xx acknowledges a write. A redirect the HTTP client does not follow
-// used to read as success.
+// A redirect without a Location is not Jenkins' acknowledgment (a 302 to the
+// previous page, which stop and cancel accept besides a 2xx), so it is an
+// unknown outcome. A redirect the HTTP client does not follow used to read
+// as success.
 func TestWriteRedirectIsNotSuccess(t *testing.T) {
 	c, _ := newTestClient(t, writeHandler(http.StatusFound))
 	err := c.CancelQueueItem(context.Background(), 77)
@@ -291,8 +293,9 @@ func TestRedirectedTriggerIsAnUnknownOutcome(t *testing.T) {
 }
 
 // Jenkins acknowledges a stop or a cancel with a redirect to "." of the
-// request: the build page or the queue page. That redirect, under any host
-// the servlet container names, is the write's success; so is a 2xx.
+// request on its host: the build page or the queue page, under whatever
+// scheme and port the servlet container names. That redirect is the write's
+// success; so is a 2xx.
 func TestStopAndCancelAcceptJenkinsAcknowledgment(t *testing.T) {
 	cases := []struct {
 		name, location string
@@ -300,7 +303,7 @@ func TestStopAndCancelAcceptJenkinsAcknowledgment(t *testing.T) {
 		write          func(Client) error
 	}{
 		{"stop, build page", "/job/app/7/", http.StatusFound, stopBuild7},
-		{"stop, build page on the container's own host", "http://jenkins.internal:8080/job/app/7/", http.StatusFound, stopBuild7},
+		{"stop, build page with the container's scheme and port", "http://127.0.0.1:8080/job/app/7/", http.StatusFound, stopBuild7},
 		{"stop, see other", "/job/app/7/", http.StatusSeeOther, stopBuild7},
 		{"stop, 200", "", http.StatusOK, stopBuild7},
 		{"cancel, queue page", "/queue/", http.StatusFound, cancelItem77},
@@ -317,9 +320,11 @@ func TestStopAndCancelAcceptJenkinsAcknowledgment(t *testing.T) {
 }
 
 // Any other redirect of a stop or a cancel says nothing about the write: a
-// login page, a single sign-on proxy, an https upgrade (which keeps the
+// login page, a single sign-on proxy (even one that sends the client to a
+// path shaped like the acknowledgment), an https upgrade (which keeps the
 // request's own path), or a method-preserving 307 that would send the write
-// again.
+// again. A proxy that leaks the container's internal host name is an unknown
+// outcome too: its read shows the result.
 func TestStopAndCancelOtherRedirectsAreUnknownOutcomes(t *testing.T) {
 	cases := []struct {
 		name, location string
@@ -333,6 +338,10 @@ func TestStopAndCancelOtherRedirectsAreUnknownOutcomes(t *testing.T) {
 		{"stop, 307 to the build page", "/job/app/7/", http.StatusTemporaryRedirect, stopBuild7},
 		{"cancel, login page", "/login?from=%2Fqueue%2FcancelItem", http.StatusFound, cancelItem77},
 		{"cancel, another job", "/job/app/", http.StatusFound, cancelItem77},
+		{"cancel, sign-on host at the queue path", "https://sso.example/queue/?login=1", http.StatusFound, cancelItem77},
+		{"stop, sign-on host at the build path", "https://sso.example/job/app/7/", http.StatusFound, stopBuild7},
+		{"stop, build page with a query", "/job/app/7/?from=login", http.StatusFound, stopBuild7},
+		{"stop, container's internal host", "http://jenkins.internal:8080/job/app/7/", http.StatusFound, stopBuild7},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
