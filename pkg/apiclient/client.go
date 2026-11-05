@@ -144,7 +144,7 @@ func (c *apiClient) getJSON(ctx context.Context, path string, query url.Values, 
 			fmt.Sprintf("request to %s failed", endpoint))
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode >= 400 {
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return c.httpError(resp, path)
 	}
 	if out == nil {
@@ -172,7 +172,7 @@ func (c *apiClient) getText(ctx context.Context, path string, query url.Values) 
 			fmt.Sprintf("request to %s failed", endpoint))
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode >= 400 {
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, nil, c.httpError(resp, path)
 	}
 	raw, _ := io.ReadAll(resp.Body)
@@ -311,10 +311,22 @@ func (c *apiClient) httpError(resp *http.Response, reqPath string) error {
 				"list to find the exact name.").
 			WithNextSteps("jenkins-cli job list", "jenkins-cli job get <path>")
 	default:
-		return cerrors.New(cat, "HTTP_"+statusSlug(resp.StatusCode), msg).
+		e := cerrors.New(cat, "HTTP_"+statusSlug(resp.StatusCode), msg).
 			WithHTTPStatus(resp.StatusCode)
+		if resp.StatusCode >= 300 && resp.StatusCode < 400 {
+			// The kit's transport returns a redirect it does not follow: a
+			// write's, a 304, or the tenth hop of a read. The kit's redirect
+			// rule reports it; for a write, the write rule then replaces its
+			// hint with its own.
+			loc, _ := resp.Location()
+			e = e.WithRedirect(loc, redirectGuide)
+		}
+		return e
 	}
 }
+
+// redirectGuide is what a redirect's error tells the user to check.
+var redirectGuide = cerrors.RedirectGuide{Setting: "--base-url", Steps: []string{"jenkins-cli doctor"}}
 
 func statusSlug(status int) string {
 	if t := http.StatusText(status); t != "" {
