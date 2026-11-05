@@ -42,6 +42,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `pkg/transport`, for a library caller that passes its own HTTP client
+  (`Options.Doer`): a read with a body (a `RetryMethods` verb, or a request
+  marked with agent-cli-kit's `transport.AsRead`) that the client turned into
+  a GET on a 301, 302 or 303 is answered by that redirect, not by the GET's
+  page, and a transient failure of that page no longer retries the read. This
+  is agent-cli-kit v0.8.1. The CLI's own client never follows such a redirect,
+  so the CLI's behavior is unchanged.
 - `job build` no longer reports success with an empty `queue` when Jenkins
   answers without a queue item `Location`. The build was queued, so it fails
   with `WRITE_SUCCEEDED_RESPONSE_INVALID` and names `queue list` to find it.
