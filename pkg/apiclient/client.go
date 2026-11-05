@@ -184,7 +184,8 @@ func (c *apiClient) getText(ctx context.Context, path string, query url.Values) 
 // (e.g. the Location of a queued build). The caller must close the body.
 //
 // Only a 2xx acknowledges a write, or a response ack accepts (nil accepts
-// none). The transport never follows a write's redirect, so ack sees it.
+// none). The transport answers a write with its first response, even through
+// a caller's own HTTP client that follows redirects, so ack sees a redirect.
 func (c *apiClient) postForm(ctx context.Context, path string, form url.Values, ack func(*http.Response) bool) (*http.Response, error) {
 	var bodyReader io.Reader
 	if len(form) > 0 {

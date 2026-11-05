@@ -3,11 +3,15 @@ package apiclient
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	cerrors "github.com/angelmsger/jenkins-cli/pkg/errors"
+	"github.com/angelmsger/jenkins-cli/pkg/transport"
 )
 
 // writeHandler serves the crumb issuer and answers every write with status.
@@ -379,3 +383,64 @@ func acknowledgingHandler(t *testing.T, status int, location string) http.Handle
 		}
 	}
 }
+
+// A library caller can pass its own HTTP client, which follows redirects by
+// Go's default policy. A write's redirect is still the write's answer: the
+// login page at the end of it never reads as a trigger, a stop or a cancel.
+func TestCustomClientWriteRedirectIsAnUnknownOutcome(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/crumbIssuer/api/json":
+			w.Write([]byte(`{"crumbRequestField":"Jenkins-Crumb","crumb":"c"}`))
+		case r.URL.Path == "/login":
+			w.Header().Set("Location", "/queue/item/9/")
+			w.Write([]byte("<html>sign in</html>"))
+		default:
+			http.Redirect(w, r, "/login", http.StatusFound)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	c := New(Config{BaseURL: srv.URL, Transport: transport.New(transport.Options{Doer: &http.Client{}, Timeout: 5 * time.Second})})
+	writes := map[string]func() error{
+		"trigger": func() error { _, err := c.TriggerBuild(context.Background(), "app", nil); return err },
+		"stop":    func() error { return stopBuild7(c) },
+		"cancel":  func() error { return cancelItem77(c) },
+	}
+	for name, write := range writes {
+		ce := cerrors.AsCLIError(write())
+		if ce == nil || ce.Retryable || ce.HTTPStatus != http.StatusFound || !strings.HasPrefix(ce.Message, "Write outcome is unknown") {
+			t.Fatalf("%s: got %+v; want an unknown outcome with the 302", name, ce)
+		}
+	}
+}
+
+// A custom Doer may answer with a response that does not name its request.
+// The acknowledgment check reads the request from it, so the transport fills
+// it in: Jenkins' acknowledgment is still recognized, and nothing panics.
+func TestSyntheticAcknowledgmentWithoutRequest(t *testing.T) {
+	doer := doerFunc(func(req *http.Request) (*http.Response, error) {
+		resp := &http.Response{Header: http.Header{}, Body: io.NopCloser(strings.NewReader(""))}
+		switch {
+		case req.URL.Path == "/crumbIssuer/api/json":
+			resp.StatusCode = http.StatusNotFound
+		case req.URL.Path == "/job/app/7/stop":
+			resp.StatusCode = http.StatusFound
+			resp.Header.Set("Location", "/job/app/7/")
+		default:
+			resp.StatusCode = http.StatusFound
+			resp.Header.Set("Location", "/login")
+		}
+		return resp, nil
+	})
+	c := New(Config{BaseURL: "https://jenkins.example", Transport: transport.New(transport.Options{Doer: doer})})
+	if err := stopBuild7(c); err != nil {
+		t.Fatalf("stop: %v; want Jenkins' acknowledgment accepted", err)
+	}
+	if ce := cerrors.AsCLIError(cancelItem77(c)); ce == nil || ce.HTTPStatus != http.StatusFound || ce.Retryable {
+		t.Fatalf("cancel: got %+v; want an unknown outcome with the 302", ce)
+	}
+}
+
+type doerFunc func(*http.Request) (*http.Response, error)
+
+func (f doerFunc) Do(req *http.Request) (*http.Response, error) { return f(req) }
