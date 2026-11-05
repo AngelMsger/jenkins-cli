@@ -58,6 +58,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with its own redirect to the build or queue page on the same host, with no
   query or fragment; the same path on another host (a single sign-on proxy)
   or with a fragment (a fragment-routed login page) is an unknown outcome.
+- A library caller that passes its own HTTP client in `Config.Transport` (one
+  that follows redirects by Go's policy, or builds responses without the
+  request) gets the same answer for a redirected write as the CLI: an unknown
+  outcome with the redirect's status, never a login page read as a queued
+  build, and the stop and cancel acknowledgment check no longer panics on a
+  response without its request. This is agent-cli-kit v0.8.0, which answers a
+  write with its first response whatever client sends it.
 - `build stop <path> last` (or another permalink) resolves the permalink to
   its build number first and stops that build. It used to post to the
   permalink and, after an uncertain stop, name `build get <path> last`, which
