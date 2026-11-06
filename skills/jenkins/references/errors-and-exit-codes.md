@@ -33,7 +33,7 @@ present) tells you whether a retry in the same environment could help
 | `not_found`  | 6    | Unknown job / build → `job list`, `build list <path>`. |
 | `rate_limit` | 7    | Too many requests; retryable for a read (a write: see below). |
 | `network`    | 8    | Server unreachable; retryable for a read → `doctor`, check `--base-url`. |
-| `server`     | 9    | Jenkins 5xx; retryable for a read (a write: see below). |
+| `server`     | 9    | Jenkins 5xx; retryable for a read (a write: see below). A 3xx `http_status` is a redirect the CLI does not follow: not retryable; the hint names where it points → `doctor`, check `--base-url`. |
 | `parse`      | 10   | Response didn't match expectations; retry with `--verbose`. |
 | `conflict`   | 11   | Resource changed since read; re-fetch then retry. |
 

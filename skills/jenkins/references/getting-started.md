@@ -75,6 +75,11 @@ jenkins-cli auth status     # identity (whoami) + reachability
 jenkins-cli doctor          # config / credentials / connectivity checks
 ```
 
+A `doctor` check whose `status` is `redirected` reached a server that
+redirected it (usually a login page, a single sign-on proxy, or an `http`
+URL that should use https): its `detail` names where it points; fix
+`--base-url` rather than the credentials.
+
 ## Precedence
 
 Highest wins: command-line flags → environment variables → `.env` file → config
