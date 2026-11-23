@@ -115,7 +115,7 @@ func route(w http.ResponseWriter, r *http.Request) {
 			// when the CLI asks for the personal identity.
 			w.Header().Set("Content-Type", "text/html;charset=utf-8")
 			w.WriteHeader(http.StatusForbidden)
-			fmt.Fprint(w, `<html><meta http-equiv="refresh" content="1;url=/securityRealm/commenceLogin?from=%2Fme%2Fapi%2Fjson"></html>`)
+			_, _ = w.Write([]byte(`<html><meta http-equiv="refresh" content="1;url=/securityRealm/commenceLogin?from=%2Fme%2Fapi%2Fjson"></html>`))
 			return
 		}
 		writeJSON(w, map[string]any{"id": "alice", "fullName": "Alice Dev"})
