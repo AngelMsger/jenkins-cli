@@ -60,6 +60,7 @@ func Execute() int {
 			ce = cerrors.Wrap(err, cerrors.CategoryUsage, "USAGE", err.Error())
 		}
 		withReuseRecovery(ce, state, cmd)
+		state.scopeAuthSteps(ce.NextSteps)
 		output.EmitError(ce, os.Stderr)
 		return cerrors.ExitCode(ce)
 	}

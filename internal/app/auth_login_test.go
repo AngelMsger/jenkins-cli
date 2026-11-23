@@ -18,6 +18,15 @@ import (
 	"github.com/zalando/go-keyring"
 )
 
+// Complete a noninteractive fixture against a newly captured login target.
+func completeLogin(s *appState, cfg config.Config, cred auth.Credential, services loginServices) (string, error) {
+	plan, err := planLogin(s, cfg, cred)
+	if err != nil {
+		return "", err
+	}
+	return plan.complete(s, cfg, cred, services)
+}
+
 func loginStateForTest(t *testing.T) (*appState, config.Config, auth.Credential) {
 	t.Helper()
 	dir := t.TempDir()

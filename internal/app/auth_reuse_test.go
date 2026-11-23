@@ -539,6 +539,9 @@ func TestRejectedCredentialRecoveryLeadsWithReuse(t *testing.T) {
 		cmd string
 	}{
 		{cerrors.New(cerrors.CategoryPermission, "FORBIDDEN", "denied").WithHTTPStatus(403), "list"},
+		{cerrors.New(cerrors.CategoryAuth, "AUTH_LOGIN_REQUIRED", "sign-in page").WithHTTPStatus(200), "status"},
+		{cerrors.New(cerrors.CategoryAuth, "AUTH_LOGIN_REQUIRED", "sign-in page").WithHTTPStatus(403), "list"},
+		{cerrors.New(cerrors.CategoryAuth, "AUTH_IDENTITY_UNAVAILABLE", "anonymous identity"), "doctor"},
 		{cerrors.New(cerrors.CategoryAuth, "HTTP_UNAUTHORIZED", "rejected").WithHTTPStatus(401), "reuse"},
 		{cerrors.New(cerrors.CategoryAuth, "HTTP_UNAUTHORIZED", "rejected").WithHTTPStatus(401), "login"},
 	} {

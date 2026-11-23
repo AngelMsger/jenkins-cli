@@ -155,8 +155,13 @@ defaults. Secrets are stored in the OS keychain. If Windows Credential Manager
 is unavailable, the fallback is encrypted with per-user DPAPI; macOS/Linux
 retain the `0600` fallback. Secrets are never written to the config file.
 
-Authenticate with your Jenkins **username + API token** (User → Configure → API
-Token). For headless / CI / agent use, configure entirely from the environment:
+If Jenkins uses single sign-on, run `jenkins-cli auth login --browser` in your
+terminal. Complete the browser login (including authentik and WeCom if required)
+and create a token under **Security → API Token**. Enter the Jenkins user ID and
+token at the prompts. This also migrates an existing password context.
+[Sign-in and migration details](docs/installation.md#single-sign-on)
+
+For CI, supply the Jenkins user ID and API token through the environment:
 
 ```bash
 export JENKINS_URL=https://jenkins.example.com
@@ -180,7 +185,7 @@ export JENKINS_TOKEN='11abc…your-api-token'   # …or JENKINS_PASSWORD for bas
 | `build artifacts` | a build's archived artifacts |
 | `build stop` | abort a running build (write) |
 | `queue list` / `get` / `cancel` | inspect the build queue; cancel a queued build (write) |
-| `auth login` / `status` / `logout` | store credentials, check identity, sign out |
+| `auth login [--browser]` / `status` / `logout` | store credentials, check identity, sign out |
 | `config init` / `show` / `get-contexts` / `use-context` / `delete-context` | setup, inspect, manage servers |
 | `doctor` | check configuration, credentials and connectivity |
 | `skill install` / `uninstall` | deploy or remove the embedded companion Skill |

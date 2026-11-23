@@ -50,15 +50,16 @@ func Guide(cfg Config, sources map[string]string) (AuthGuide, error) {
 	}
 	base, _ := NormalizeServiceURL(cfg.BaseURL)
 	g := AuthGuide{Server: base, Scheme: cfg.Auth.Scheme, CredentialURL: base, Source: "fallback",
-		NextSteps: []string{constants.AppName + " auth login"}}
+		NextSteps: []string{constants.AppName + " auth login --browser"}}
 	g.CredentialURL = base + "/me/security"
 	g.Source = "builtin"
 	g.DocumentationURL = "https://www.jenkins.io/doc/book/system-administration/authenticating-scripted-clients/"
-	g.Instructions = []string{"Sign in, open your user menu, then Security and create an API token. Older versions use Configure > API Token.", "Use your Jenkins username together with the API token. Override --credential-url if your version uses another page."}
+	g.Instructions = []string{"Complete browser sign-in, including any SSO or WeCom approval. Open your user menu > Security > API Token (Configure on older Jenkins versions) and generate a named token.", "Use the Jenkins user ID shown at " + base + "/me/api/json?tree=id after signing in. Enter the token only at the terminal prompt."}
 	if cfg.Auth.Scheme == SchemeBasic {
+		g.NextSteps = []string{constants.AppName + " auth login"}
 		g.CredentialURL = base
 		g.Source = "fallback"
-		g.Instructions = []string{"Use your Jenkins username and password if the security realm supports passwords. API tokens are recommended (--auth-scheme token)."}
+		g.Instructions = []string{"Use your Jenkins username and password if the security realm supports passwords. If the server moved to single sign-on, run jenkins-cli auth login --browser to migrate this context to a Jenkins API token."}
 	}
 	if cfg.ReuseStep != "" {
 		g.Instructions = append([]string{"This machine may already hold a login for this Jenkins, under this or the other scheme. Before signing in, run `" + cfg.ReuseStep + "`: it verifies a stored API token or password and points this context at it. No secret is copied."}, g.Instructions...)

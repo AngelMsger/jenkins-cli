@@ -110,6 +110,14 @@ func route(w http.ResponseWriter, r *http.Request) {
 	case path == "/crumbIssuer/api/json":
 		writeJSON(w, map[string]any{"crumbRequestField": "Jenkins-Crumb", "crumb": "test-crumb"})
 	case path == "/me/api/json":
+		if user, _, _ := r.BasicAuth(); user == "sso-required" {
+			// The root is readable, but Jenkins challenges an old password
+			// when the CLI asks for the personal identity.
+			w.Header().Set("Content-Type", "text/html;charset=utf-8")
+			w.WriteHeader(http.StatusForbidden)
+			fmt.Fprint(w, `<html><meta http-equiv="refresh" content="1;url=/securityRealm/commenceLogin?from=%2Fme%2Fapi%2Fjson"></html>`)
+			return
+		}
 		writeJSON(w, map[string]any{"id": "alice", "fullName": "Alice Dev"})
 	case path == "/api/json":
 		if strings.Contains(tree, "jobs[") {

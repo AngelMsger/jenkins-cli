@@ -67,13 +67,19 @@ fi
 - **`AUTH_LOGIN_NEEDS_TTY` (auth/4)** — `auth login` needs a terminal; plain
   `config init` also supports piped input. In CI / agents set `JENKINS_USER` +
   `JENKINS_TOKEN` (or `JENKINS_PASSWORD`).
-- **`HTTP_UNAUTHORIZED` (auth/4)** — Jenkins rejected the credentials. Use your
-  Jenkins **username + API token** (User → Configure → API Token), not your web
-  password. Re-run `config init`.
-- **`HTTP_FORBIDDEN` (permission/5)** — authenticated but the user lacks
-  permission for the resource (needs Job/Read, or Job/Build for a trigger), or a
-  required CSRF crumb was missing. Check the user's permissions in Jenkins →
-  Manage Jenkins → Security.
+- **`AUTH_LOGIN_REQUIRED` / `HTTP_UNAUTHORIZED` (auth/4)** — Jenkins
+  requested sign-in or rejected the credential. After SSO migration, run
+  `auth login --browser` in the user's terminal, then check `auth status`.
+- **`AUTH_IDENTITY_UNAVAILABLE` / `AUTH_IDENTITY_MISMATCH` (auth/4)** —
+  check the signed-in Jenkins user's ID and the personal token's owner.
+- **`LOGIN_CREDENTIAL_SHARED` (conflict/11)** — the named context would
+  resolve this secret for another identity or deployment. Use per-invocation
+  environment credentials for separate accounts on the same host.
+- **`LOGIN_CONFIG_CHANGED` (conflict/11)** — a context changed during login.
+  Check `config get-contexts` and repeat the intended login mode.
+- **`HTTP_FORBIDDEN` (permission/5)** — check the Jenkins identity and its
+  permission for the resource (Job/Read, or Job/Build for a trigger).
+  A write may also require a CSRF crumb.
 - **`HTTP_NOT_FOUND` (not_found/6)** — no job or build at that path. Paths are
   `folder/job[/branch]` and case-sensitive; run `job list` / `build list`.
 - **`NOT_PIPELINE` (not_found/6)** — the stages endpoint returned 404. Verify
@@ -86,7 +92,8 @@ fi
   `queue cancel`) was blocked because the session is read-only. Preview with
   `--dry-run`; use `--allow-writes` only for a write the user authorized.
 - **"Write outcome is unknown for …"** — a write failed after it may have
-  reached Jenkins (timeout, network error, 429, 5xx, or a redirect). It is
+  reached Jenkins (timeout, network error, 429, 5xx, a redirect, or a
+  successful HTTP response containing a sign-in page, `WRITE_LOGIN_PAGE`). It is
   `retryable=false`: a second `job build` could start a second build. Run the
   reads in `next_steps` (`queue list` and `build list` for a trigger,
   `build get` for a stop, `queue get` for a cancel) and repeat the write only

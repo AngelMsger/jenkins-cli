@@ -1,8 +1,6 @@
 package app
 
 import (
-	"fmt"
-	"os"
 	"strings"
 
 	"github.com/angelmsger/jenkins-cli/internal/config"
@@ -49,29 +47,55 @@ func newAuthGuideCmd(s *appState) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if name := s.resolved.ActiveContext; name != "" {
-				quoted := "'" + strings.ReplaceAll(name, "'", "'\"'\"'") + "'"
-				for i, step := range g.NextSteps {
-					if strings.Contains(step, " --use-context ") {
-						continue // the reuse step already names its context
-					}
-					g.NextSteps[i] = strings.Replace(step, " auth ", " --use-context "+quoted+" auth ", 1)
-				}
-			}
+			s.scopeAuthSteps(g.NextSteps)
 			return s.emit(g)
 		},
 	}
 }
 
-func printAuthGuide(cfg config.Config) error {
-	g, err := config.Guide(cfg, nil)
-	if err != nil {
-		return err
+// Recovery can start a personal login. Carry its configuration directory and
+// explicit service override even when reuse already supplied a context.
+func (s *appState) scopeAuthSteps(steps []string) {
+	configFlag := ""
+	if s.gflags.configPath != "" {
+		configFlag = " --config " + cerrors.ShellArg(s.gflags.configPath)
 	}
-	for _, line := range g.Lines() {
-		fmt.Fprintln(os.Stderr, line)
+	baseFlag := ""
+	if s.gflags.baseURL != "" {
+		base, err := config.NormalizeServiceURL(s.gflags.baseURL)
+		if err != nil {
+			// Never print userinfo or send the user to a different default server.
+			base = "<jenkins-url>"
+		}
+		baseFlag = " --base-url " + cerrors.ShellArg(base)
 	}
-	return nil
+	for i, step := range steps {
+		command, ok := strings.CutPrefix(step, "jenkins-cli ")
+		if !ok {
+			continue
+		}
+		flags := configFlag + baseFlag
+		switch {
+		case strings.HasPrefix(command, "auth "):
+			if s.resolved != nil && s.resolved.ActiveContext != "" {
+				command = "--use-context " + cerrors.ShellArg(s.resolved.ActiveContext) + " " + command
+			}
+		case strings.HasPrefix(command, "--use-context ") && strings.Contains(command, " auth "):
+			// The step already names its destination, which may be a new context.
+		case command == "config get-contexts", strings.HasPrefix(command, "config set-context "),
+			strings.HasPrefix(command, "--base-url <jenkins-url> auth "):
+			// Discovery is offline; a setup template supplies its own server.
+			flags = configFlag
+		case command == "doctor":
+			if s.gflags.useContext != "" {
+				command = "--use-context " + cerrors.ShellArg(s.gflags.useContext) + " " + command
+			}
+		case command == "config init", strings.HasPrefix(command, "config init --context "):
+		default:
+			continue
+		}
+		steps[i] = "jenkins-cli" + flags + " " + command
+	}
 }
 
 // setupPrefill applies presets to the actual wizard destination, not the active context.

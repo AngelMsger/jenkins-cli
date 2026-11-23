@@ -113,6 +113,13 @@ recovery; never request a guide URL with credentials. Cover a fresh config reloa
 conflict/idempotent setup, and partial persistence failures when changing this
 flow. The canonical behavior is in the installation guide's team setup section.
 
+For browser-assisted login, open only the configured Jenkins deployment in the
+desktop browser. Keep the identity provider and its session cookies in that
+browser. Verify the personal API token with a nonanonymous Jenkins user ID
+before changing a context. Cover migration from a different password-era user
+ID, explicit migration of aliases that share that identity and token slot,
+failed verification, and sign-in challenges versus job permission errors.
+
 ## Credential reuse
 
 Keep `auth reuse` separate from public service setup. The decision belongs to

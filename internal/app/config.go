@@ -102,22 +102,21 @@ func newConfigInitCmd(s *appState) *cobra.Command {
 			}
 			cred := auth.Credential{Scheme: vals.scheme, Username: vals.username, Secret: vals.secret}
 
-			backend, err := verifyAndSave(s, normURL, cred)
+			nc := config.NamedContext{
+				Name: target, BaseURL: normURL,
+				Auth: config.AuthConfig{Scheme: cred.Scheme, Username: cred.Username, CredentialURL: vals.credentialURL},
+			}
+			plan := newLoginPlan(file, nc, "jenkins-cli config init --context "+cerrors.ShellArg(target))
+			if replaceAll {
+				plan.after.Contexts = []config.NamedContext{nc}
+				plan.retryStep = "jenkins-cli config init"
+			}
+			plan.after.CurrentContext = target
+			cfg := s.cfg()
+			cfg.BaseURL, cfg.Auth = normURL, nc.Auth
+			backend, err := plan.complete(s, cfg, cred, s.loginServices())
 			if err != nil {
 				return err
-			}
-
-			if replaceAll {
-				file.Contexts = nil
-			}
-			file.Upsert(config.NamedContext{
-				Name:    target,
-				BaseURL: normURL,
-				Auth:    config.AuthConfig{Scheme: cred.Scheme, Username: cred.Username, CredentialURL: vals.credentialURL},
-			})
-			file.CurrentContext = target
-			if err := config.WriteFile(s.cfgDir, file); err != nil {
-				return cerrors.Wrap(err, cerrors.CategoryConfig, "CONFIG_WRITE", "failed to write config")
 			}
 			return s.emit(map[string]any{
 				"configured": true,

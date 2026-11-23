@@ -1,6 +1,6 @@
 ---
 name: jenkins
-version: 0.2.9
+version: 0.2.10
 description: "Inspect Jenkins jobs, folders, multibranch branches/PRs, build status/history, console logs, Pipeline stages, failing tests, SCM changes and the build queue; trigger, stop or cancel builds when authorized. Use for Jenkins questions, known Jenkins-backed CI, Jenkins job/build URLs, latest success/failure, red builds, failed stages/tests, console output, changes in a build, queued work, or rebuild/start/stop/abort/cancel requests. JSON and structured errors support agent workflows. Reuse existing host configuration and credentials; setup uses jenkins-cli config init or JENKINS_URL / JENKINS_USER / JENKINS_TOKEN. Inspection is read-only. --allow-writes overrides configured read-only mode for an authorized write."
 metadata:
   requires:
@@ -135,6 +135,7 @@ jenkins-cli build stop <path> <number>               # abort a running build (wr
 jenkins-cli config init|show                         # configuration
 jenkins-cli config get-contexts|use-context <name>   # list / switch named server contexts
 jenkins-cli config delete-context <name>             # remove a context and its unused secret
+jenkins-cli auth login [--browser]                   # personal login in the user's terminal; --browser starts SSO/token migration
 jenkins-cli auth status                              # who am I / can I reach the server
 jenkins-cli auth reuse [--from-context <name>] [--from-scheme <scheme>] [--dry-run]   # adopt a login already on this machine
 jenkins-cli doctor                                   # diagnose config / creds / connectivity
@@ -143,7 +144,7 @@ jenkins-cli skill status|install|path|show|uninstall # manage the companion Skil
 
 ## Agent-facing conventions
 
-- **Skill handshake — set `JENKINS_CLI_SKILL=0.2.9`.** Once you have loaded
+- **Skill handshake — set `JENKINS_CLI_SKILL=0.2.10`.** Once you have loaded
   this Skill, export that exact value in the environment used to run the CLI.
   The CLI compares it with the embedded Skill version and emits a structured
   stderr notice when the Skill is missing, old, or uses the legacy unversioned
@@ -182,6 +183,10 @@ jenkins-cli skill status|install|path|show|uninstall # manage the companion Skil
   navigation steps, and limitations. Links are hints, not evidence of server
   capabilities. Follow the returned product-specific instructions; do not invent
   a token URL or assume ingestion credentials authorize queries.
+- After a move to SSO, use `auth login --browser` in the member's terminal.
+  They complete authentik/WeCom in the browser, then enter the Jenkins
+  user ID and personal API token at the prompts. Check `auth status` for
+  `authenticated` and `user_id`. See [getting started](references/getting-started.md).
 - Once a service is preset, direct the member to `auth login` in their terminal
   to save their verified personal identity and secret. Do not ask for secrets in
   chat. In non-interactive environments use transient credential variables.

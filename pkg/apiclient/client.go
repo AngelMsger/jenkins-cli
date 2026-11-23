@@ -12,6 +12,7 @@
 package apiclient
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -152,6 +153,9 @@ func (c *apiClient) getJSON(ctx context.Context, path string, query url.Values, 
 		return nil
 	}
 	raw, _ := io.ReadAll(resp.Body)
+	if c.loginPage(resp, raw) {
+		return loginRequired(resp.StatusCode)
+	}
 	return decodeJSON(raw, out)
 }
 
@@ -176,6 +180,9 @@ func (c *apiClient) getText(ctx context.Context, path string, query url.Values) 
 		return nil, nil, c.httpError(resp, path)
 	}
 	raw, _ := io.ReadAll(resp.Body)
+	if c.loginPage(resp, raw) {
+		return nil, nil, loginRequired(resp.StatusCode)
+	}
 	return raw, resp.Header, nil
 }
 
@@ -206,9 +213,32 @@ func (c *apiClient) postForm(ctx context.Context, path string, form url.Values, 
 		return nil, cerrors.Wrap(err, cerrors.CategoryNetwork, "NETWORK",
 			fmt.Sprintf("request to %s failed", c.baseURL+path))
 	}
-	if (resp.StatusCode < 200 || resp.StatusCode >= 300) && (ack == nil || !ack(resp)) {
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		if ack != nil && ack(resp) {
+			return resp, nil
+		}
 		defer resp.Body.Close()
 		return nil, c.httpError(resp, path)
+	}
+	if htmlResponse(resp) {
+		// Some proxies answer the POST with their sign-in page itself. Its
+		// HTTP status cannot establish whether Jenkins applied the write.
+		body := bufio.NewReaderSize(resp.Body, loginPagePrefix)
+		prefix, err := body.Peek(loginPagePrefix)
+		if c.loginPage(resp, prefix) {
+			resp.Body.Close()
+			return nil, cerrors.New(cerrors.CategoryServer, "WRITE_LOGIN_PAGE", "the write received a browser sign-in page").
+				WithHTTPStatus(resp.StatusCode)
+		}
+		if err != nil && err != io.EOF {
+			resp.Body.Close()
+			return nil, cerrors.Wrap(err, cerrors.CategoryNetwork, "NETWORK", "could not read the write response").
+				WithHTTPStatus(resp.StatusCode)
+		}
+		resp.Body = struct {
+			io.Reader
+			io.Closer
+		}{body, resp.Body}
 	}
 	return resp, nil
 }
@@ -266,6 +296,12 @@ func (c *apiClient) crumb(ctx context.Context) (name, value string) {
 func decodeJSON(body []byte, out any) error {
 	if err := json.Unmarshal(body, out); err != nil {
 		snippet := strings.TrimSpace(string(body))
+		if strings.HasPrefix(snippet, "<") {
+			// Login and proxy HTML may contain session state in a form or URL.
+			return cerrors.Wrap(err, cerrors.CategoryParse, "DECODE", "the Jenkins API returned markup where JSON was expected").
+				WithHint("Check the Jenkins base URL and whether an access proxy serves a sign-in page on this API route.").
+				WithNextSteps("jenkins-cli auth guide", "Confirm the supported API endpoint with the service owner.")
+		}
 		if len(snippet) > 200 {
 			snippet = snippet[:200] + "…"
 		}
@@ -280,14 +316,59 @@ func decodeJSON(body []byte, out any) error {
 	return nil
 }
 
+const loginPagePrefix = 4096
+
+func htmlResponse(resp *http.Response) bool {
+	return strings.HasPrefix(strings.ToLower(resp.Header.Get("Content-Type")), "text/html")
+}
+
+// Jenkins serves its anonymous access-denied page as HTML with a refresh to
+// the security realm, including for requests to JSON endpoints. A regular
+// permission denial for a signed-in user must retain its permission category.
+func (c *apiClient) loginPage(resp *http.Response, body []byte) bool {
+	if !htmlResponse(resp) {
+		return false
+	}
+	if resp.Request != nil && resp.Request.URL != nil {
+		// Login routes are relative to the deployment root. The same name
+		// beneath /job/ can be an ordinary Jenkins folder or job.
+		if base, err := url.Parse(c.baseURL); err == nil {
+			root := strings.TrimRight(base.Path, "/")
+			path := strings.TrimSuffix(resp.Request.URL.Path, "/")
+			if path == root+"/login" || strings.HasPrefix(path, root+"/securityRealm/") {
+				return true
+			}
+		}
+	}
+	if len(body) > loginPagePrefix {
+		body = body[:loginPagePrefix]
+	}
+	page := strings.ToLower(string(body))
+	return strings.Contains(page, "http-equiv=") && strings.Contains(page, "refresh") &&
+		strings.Contains(page, "/securityrealm/commencelogin")
+}
+
+func loginRequired(status int) *cerrors.CLIError {
+	return cerrors.New(cerrors.CategoryAuth, "AUTH_LOGIN_REQUIRED", "Jenkins requested browser sign-in").
+		WithHTTPStatus(status).
+		WithHint("Complete single sign-on in the browser and use the Jenkins user ID and a personal API token in the terminal.").
+		WithNextSteps("jenkins-cli auth guide", "jenkins-cli auth login --browser")
+}
+
 // httpError turns a non-2xx response into a classified CLIError. reqPath is the
 // request path; it is reserved for path-specific guidance.
 func (c *apiClient) httpError(resp *http.Response, reqPath string) error {
 	_ = reqPath
 	cat := cerrors.FromHTTPStatus(resp.StatusCode)
-	snippet, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+	snippet, _ := io.ReadAll(io.LimitReader(resp.Body, loginPagePrefix))
+	actor := resp.Header.Get("X-You-Are-Authenticated-As")
+	if resp.StatusCode == http.StatusForbidden && (strings.EqualFold(actor, "anonymous") || (actor == "" && c.loginPage(resp, snippet))) {
+		return loginRequired(resp.StatusCode)
+	}
 	msg := fmt.Sprintf("Jenkins returned HTTP %d", resp.StatusCode)
-	if detail := firstLine(string(snippet)); detail != "" {
+	// Redirect bodies may repeat a sign-in URL containing private query data.
+	if detail := firstLine(string(snippet)); detail != "" && resp.StatusCode >= 400 &&
+		!htmlResponse(resp) {
 		msg += ": " + detail
 	}
 
@@ -297,12 +378,11 @@ func (c *apiClient) httpError(resp *http.Response, reqPath string) error {
 			WithHTTPStatus(resp.StatusCode).
 			WithHint("Jenkins rejected the credentials. Use your Jenkins username plus an API token "+
 				"(User → Configure → API Token), not your web password.").
-			WithNextSteps("jenkins-cli auth status", "jenkins-cli config init")
+			WithNextSteps("jenkins-cli auth guide", "jenkins-cli auth login --browser")
 	case http.StatusForbidden:
 		return cerrors.New(cat, "HTTP_FORBIDDEN", msg).
 			WithHTTPStatus(resp.StatusCode).
-			WithHint("Authenticated, but this user lacks permission for the resource, " +
-				"or a CSRF crumb was required and missing.").
+			WithHint("Check the Jenkins identity and its permission for the resource. A write may also require a CSRF crumb.").
 			WithNextSteps("Confirm the user has Job/Read (and Job/Build for writes) in Jenkins → Manage → Security.")
 	case http.StatusNotFound:
 		return cerrors.New(cat, "HTTP_NOT_FOUND", msg).
@@ -326,7 +406,10 @@ func (c *apiClient) httpError(resp *http.Response, reqPath string) error {
 }
 
 // redirectGuide is what a redirect's error tells the user to check.
-var redirectGuide = cerrors.RedirectGuide{Setting: "--base-url", Steps: []string{"jenkins-cli doctor"}}
+var redirectGuide = cerrors.RedirectGuide{Setting: "--base-url", Steps: []string{
+	"jenkins-cli doctor", "jenkins-cli auth guide",
+	"If the API redirects to SSO even with a Jenkins token, confirm the supported API endpoint and authentication method with the service owner.",
+}}
 
 func statusSlug(status int) string {
 	if t := http.StatusText(status); t != "" {

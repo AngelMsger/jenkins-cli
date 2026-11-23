@@ -212,3 +212,13 @@ func TestSetupRecoveryQuotesContextNames(t *testing.T) {
 		}
 	}
 }
+
+func TestGuideOffersOneLoginForEachScheme(t *testing.T) {
+	for scheme, want := range map[string]string{SchemeBasic: "jenkins-cli auth login", SchemeToken: "jenkins-cli auth login --browser"} {
+		cfg := Config{BaseURL: "https://jenkins.example/ci", Auth: AuthConfig{Scheme: scheme}, ReuseStep: "jenkins-cli auth reuse"}
+		guide, err := Guide(cfg, nil)
+		if err != nil || !reflect.DeepEqual(guide.NextSteps, []string{cfg.ReuseStep, want}) {
+			t.Fatalf("scheme %s: steps %v, error %v", scheme, guide.NextSteps, err)
+		}
+	}
+}

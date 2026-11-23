@@ -3,6 +3,9 @@ package apiclient
 import (
 	"context"
 	"net/url"
+	"strings"
+
+	cerrors "github.com/angelmsger/jenkins-cli/pkg/errors"
 )
 
 // Ping verifies connectivity and credentials by reading the instance root.
@@ -22,6 +25,10 @@ func (c *apiClient) WhoAmI(ctx context.Context) (*User, error) {
 	}
 	if err := c.getJSON(ctx, "/me/api/json", q, &raw); err != nil {
 		return nil, err
+	}
+	if strings.TrimSpace(raw.ID) == "" || strings.EqualFold(strings.TrimSpace(raw.ID), "anonymous") {
+		return nil, cerrors.New(cerrors.CategoryAuth, "AUTH_IDENTITY_UNAVAILABLE", "Jenkins did not return an authenticated user").
+			WithNextSteps("jenkins-cli auth guide", "jenkins-cli auth login --browser")
 	}
 	return &User{ID: raw.ID, FullName: raw.FullName}, nil
 }

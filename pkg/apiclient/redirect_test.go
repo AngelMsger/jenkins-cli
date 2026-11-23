@@ -62,3 +62,102 @@ func TestConsoleRedirectIsAnError(t *testing.T) {
 		}
 	}
 }
+
+func TestJenkinsSignInChallengeAndPermissions(t *testing.T) {
+	const login = `<html><head><meta http-equiv="refresh" content="1;url=/ci/securityRealm/commenceLogin?from=private-sentinel"></head></html>`
+	for _, tc := range []struct {
+		name, body, as, code string
+		status               int
+	}{
+		{"login challenge", login, "", "AUTH_LOGIN_REQUIRED", 403},
+		{"HTML login on success", login, "", "AUTH_LOGIN_REQUIRED", 200},
+		{"anonymous denied", "", "anonymous", "AUTH_LOGIN_REQUIRED", 403},
+		{"named user denied", login, "alice", "HTTP_FORBIDDEN", 403},
+		{"proxy denied", "<html>Access Denied</html>", "", "HTTP_FORBIDDEN", 403},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			client, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "text/html;charset=utf-8")
+				w.Header().Set("X-You-Are-Authenticated-As", tc.as)
+				w.WriteHeader(tc.status)
+				_, _ = w.Write([]byte(tc.body))
+			})
+			err := client.Ping(context.Background())
+			ce := cerrors.AsCLIError(err)
+			if err == nil || ce.Code != tc.code || ce.HTTPStatus != tc.status || strings.Contains(ce.Message, "private-sentinel") {
+				t.Fatalf("unexpected diagnosis: %+v", ce)
+			}
+			if tc.code == "AUTH_LOGIN_REQUIRED" && !strings.Contains(strings.Join(ce.NextSteps, " "), "auth login --browser") {
+				t.Fatalf("missing sign-in recovery: %+v", ce)
+			}
+		})
+	}
+}
+
+func TestBuildClientStopsBeforeExternalIdentityProvider(t *testing.T) {
+	idp := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Error("the CLI contacted the identity provider")
+	}))
+	defer idp.Close()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, idp.URL+"/authorize?state=private-sentinel", http.StatusFound)
+	}))
+	defer server.Close()
+	client, err := BuildClient(BuildParams{BaseURL: server.URL, AuthDecorator: func(r *http.Request) { r.SetBasicAuth("alice", "fixture-token") }})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = client.WhoAmI(context.Background())
+	ce := cerrors.AsCLIError(err)
+	if err == nil || !ce.IsRedirect() || ce.HTTPStatus != 302 || strings.Contains(ce.Message+ce.Hint, "private-sentinel") {
+		t.Fatalf("unexpected redirect: %+v", ce)
+	}
+}
+
+func TestSignInRoutesAreRelativeToJenkinsRoot(t *testing.T) {
+	const root = "/team/ci"
+	for _, tc := range []struct{ path, code string }{
+		{root + "/login/", "AUTH_LOGIN_REQUIRED"},
+		{root + "/securityRealm/commenceLogin", "AUTH_LOGIN_REQUIRED"},
+		{"/other/securityRealm/commenceLogin", "DECODE"},
+	} {
+		t.Run(tc.path, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == root+"/api/json" {
+					http.Redirect(w, r, tc.path, http.StatusFound)
+					return
+				}
+				w.Header().Set("Content-Type", "text/html")
+				_, _ = w.Write([]byte("<html>sign in</html>"))
+			}))
+			defer server.Close()
+			client := New(Config{BaseURL: server.URL + root, Transport: transport.New(transport.Options{})})
+			err := client.Ping(context.Background())
+			if err == nil || cerrors.AsCLIError(err).Code != tc.code {
+				t.Fatalf("redirect to %s: got %v, want %s", tc.path, err, tc.code)
+			}
+		})
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		switch r.URL.Path {
+		case root + "/crumbIssuer/api/json":
+			http.NotFound(w, r)
+		case root + "/job/securityRealm/api/json":
+			http.Error(w, "permission denied", http.StatusForbidden)
+		case root + "/job/securityRealm/7/stop":
+			_, _ = w.Write([]byte("<html>stopped</html>"))
+		default:
+			t.Errorf("unexpected request: %s", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+	client := New(Config{BaseURL: server.URL + root, Transport: transport.New(transport.Options{})})
+	if _, err := client.GetJob(context.Background(), "securityRealm"); err == nil || cerrors.AsCLIError(err).Code != "HTTP_FORBIDDEN" {
+		t.Fatalf("permission check on securityRealm job: got %v, want HTTP_FORBIDDEN", err)
+	}
+	if err := client.StopBuild(context.Background(), "securityRealm", "7"); err != nil {
+		t.Fatalf("stop on securityRealm job: %v", err)
+	}
+}

@@ -149,8 +149,8 @@ func reuseAuthentication(s *appState, opts reuseOptions, services reuseServices)
 	return reuse.Run(req)
 }
 
-// withReuseRecovery leads a rejected-credential error (HTTP 401) with
-// `auth reuse` when a stored login could replace the rejected one.
+// The kit treats an HTTP 401 as a rejected credential. A sign-in page or an
+// unavailable identity can also come from a proxy that challenges every token.
 func withReuseRecovery(ce *cerrors.CLIError, s *appState, cmd *cobra.Command) {
 	if ce.Category != cerrors.CategoryAuth || ce.HTTPStatus != 401 || s == nil || s.resolved == nil || cmd == nil {
 		return

@@ -217,12 +217,52 @@ context fails with `CONTEXT_BASE_URL_MISMATCH` before storing a credential.
 `CREDENTIAL_SAVE_FAILED` means validation succeeded but storage failed.
 `LOGIN_CONFIG_WRITE_FAILED` means the credential was stored but its config
 identity could not be recorded; its details preserve the server/context/scheme
-and `credential_stored: true`. Fix file access and run `auth login` again.
+and `credential_stored: true`. Fix file access and repeat the same login mode
+with the verified credential. For browser-assisted migration, use
+`auth login --browser` again.
 Configuration files are replaced atomically. Normal credential environment
 variables remain transient and are never copied by `config set-context`.
 Non-interactive users supply credentials through the documented environment
 variables rather than piping secrets into `auth login`. `config init` retains its
 edit/add/replace flow and now uses target-specific presets and the same guide.
+
+## Single sign-on
+
+For an existing password context or a new team preset, run the following in a
+terminal. Use the same `--use-context` on both commands when selecting a named
+context. For a first login without a preset, pass `--base-url <jenkins-url>`.
+
+```bash
+jenkins-cli auth login --browser
+jenkins-cli auth status
+```
+
+1. The CLI opens the configured Jenkins instance at `/me/security`. Complete
+   your normal sign-in, including authentik and WeCom approval when applicable.
+   On a remote terminal, open the printed URL on your own device.
+2. Under **API Token**, add a named token and copy it. Older Jenkins versions
+   put this under **Configure**. To find your Jenkins user ID, open the
+   `/me/api/json?tree=id` link printed by the CLI in the signed-in browser.
+3. At the terminal, accept or edit the suggested user ID and paste the token
+   at the hidden prompt. The CLI verifies the identity on the configured
+   Jenkins API before storing the token and selecting the `token` scheme.
+   The old password may still serve other contexts. If another context shares
+   the same token and previous user ID on this Jenkins, the CLI lists all such
+   aliases and asks whether to update their user IDs together. Declining leaves
+   the token and configuration intact. A separate identity or deployment
+   using the same slot produces `LOGIN_CREDENTIAL_SHARED`. If a context
+   changes during the browser prompt, the CLI stops before storing the token.
+   A change detected after the keychain write is reported as partial success.
+4. Check `authenticated` and `user_id` in `auth status`. Remove stale
+   `JENKINS_PASSWORD`, `JENKINS_TOKEN`, `JENKINS_AUTH_SCHEME` and
+   `JENKINS_USER` overrides from the shell or `.env` if they still select
+   the pre-migration login.
+
+Jenkins owns the API token. The browser handles the identity provider and its
+cookies. If a separate access proxy challenges requests even with a valid
+Jenkins token, ask the service owner for its supported API endpoint and
+authentication method. A sign-in redirect alone cannot establish token access.
+[Authenticating scripted clients](https://www.jenkins.io/doc/book/system-administration/authenticating-scripted-clients/)
 
 ## Reuse an existing login
 

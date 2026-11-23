@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -45,21 +46,60 @@ func TestWriteFailuresAreUnknownOutcomes(t *testing.T) {
 			return c.CancelQueueItem(context.Background(), 77)
 		}, queueWriteTarget(77)},
 	}
+	replies := []struct {
+		name    string
+		status  int
+		code    string
+		handler http.HandlerFunc
+	}{
+		{"unavailable", 503, "HTTP_SERVICE_UNAVAILABLE", writeHandler(http.StatusServiceUnavailable)},
+		{"sign-in page", 200, "WRITE_LOGIN_PAGE", func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodGet {
+				http.NotFound(w, r) // Crumb issuer disabled.
+				return
+			}
+			w.Header().Set("Content-Type", "text/html;charset=utf-8")
+			io.WriteString(w, `<html><meta http-equiv="refresh" content="1;url=/securityRealm/commenceLogin?from=private-state"></html>`)
+		}},
+	}
 	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			c, _ := newTestClient(t, writeHandler(http.StatusServiceUnavailable))
-			ce := cerrors.AsCLIError(tc.write(c))
-			if ce.Category != cerrors.CategoryServer || ce.HTTPStatus != 503 || ce.Retryable {
-				t.Fatalf("got category %s, status %d, retryable %v; want a non-retryable server 503",
-					ce.Category, ce.HTTPStatus, ce.Retryable)
-			}
-			if !strings.HasPrefix(ce.Message, "Write outcome is unknown for "+tc.target.Description) {
-				t.Fatalf("message %q does not name the write target", ce.Message)
-			}
-			if len(ce.NextSteps) != len(tc.target.ReadSteps) || ce.NextSteps[0] != tc.target.ReadSteps[0] {
-				t.Fatalf("next steps %q, want the target's reads %q", ce.NextSteps, tc.target.ReadSteps)
-			}
-		})
+		for _, reply := range replies {
+			t.Run(tc.name+"/"+reply.name, func(t *testing.T) {
+				c, _ := newTestClient(t, reply.handler)
+				ce := cerrors.AsCLIError(tc.write(c))
+				if ce.Code != reply.code || ce.Category != cerrors.CategoryServer || ce.HTTPStatus != reply.status || ce.Retryable {
+					t.Fatalf("got %+v; want non-retryable %s (HTTP %d)", ce, reply.code, reply.status)
+				}
+				if !strings.HasPrefix(ce.Message, "Write outcome is unknown for "+tc.target.Description) ||
+					strings.Contains(ce.Message+ce.Hint, "private-state") {
+					t.Fatalf("unexpected write-outcome message %q", ce.Message)
+				}
+				if !slices.Equal(ce.NextSteps, tc.target.ReadSteps) {
+					t.Fatalf("next steps %q, want the target's reads %q", ce.NextSteps, tc.target.ReadSteps)
+				}
+			})
+		}
+	}
+}
+
+func TestPostFormKeepsSuccessfulHTMLBody(t *testing.T) {
+	page := "<html>" + strings.Repeat("x", loginPagePrefix) + "accepted</html>"
+	c, _ := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html")
+		io.WriteString(w, page)
+	})
+	resp, err := c.(*apiClient).postForm(context.Background(), "/job/app/7/stop", nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	got, err := io.ReadAll(resp.Body)
+	if err != nil || string(got) != page {
+		t.Fatalf("HTML write response lost its body, length=%d, err=%v", len(got), err)
 	}
 }
 

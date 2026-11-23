@@ -49,30 +49,29 @@ func newDoctorCmd(s *appState) *cobra.Command {
 			add("server_configured", serverOK, statusForOK(serverOK, "missing"), cfg.BaseURL, "")
 
 			credOK := false
-			// A stored login may replace a missing or rejected one; reuse reads the
-			// same store, so an unreadable store or an outage is recovered otherwise.
-			reuseHelps := false
+			var checkErr error
 			client, err := s.newClient()
 			if err != nil {
+				checkErr = err
 				add("credentials", false, doctor.Status(err), doctor.Detail(err), doctor.RecoveryScope(err))
-				reuseHelps = doctor.Status(err) != doctor.StatusInaccessible
 			} else {
 				credOK = true
 				add("credentials", true, "ok", "scheme "+cfg.Auth.Scheme, "")
 			}
 
-			connOK := false
 			if credOK {
 				ctx, cancel := cmdContext(s)
 				defer cancel()
-				if perr := client.Ping(ctx); perr != nil {
-					add("connectivity", false, doctor.Status(perr), doctor.Detail(perr), doctor.RecoveryScope(perr))
-					ce := cerrors.AsCLIError(perr)
-					reuseHelps = ce.Category == cerrors.CategoryAuth && ce.HTTPStatus == 401
+				checkErr = client.Ping(ctx)
+				if checkErr != nil {
+					add("connectivity", false, doctor.Status(checkErr), doctor.Detail(checkErr), doctor.RecoveryScope(checkErr))
 				} else {
-					connOK = true
-					add("connectivity", true, "ok", "reached and authenticated", "")
-					if user, uerr := client.WhoAmI(ctx); uerr == nil && (user.ID != "" || user.FullName != "") {
+					add("connectivity", true, "ok", "reached Jenkins", "")
+					user, err := client.WhoAmI(ctx)
+					checkErr = err
+					if err != nil {
+						add("identity", false, doctor.Status(err), doctor.Detail(err), doctor.RecoveryScope(err))
+					} else {
 						name := user.FullName
 						if name == "" {
 							name = user.ID
@@ -83,14 +82,17 @@ func newDoctorCmd(s *appState) *cobra.Command {
 			}
 			checks = append(checks, companionSkillDoctorCheck())
 
-			healthy := serverOK && credOK && connOK
+			healthy := serverOK && credOK && checkErr == nil
 			report := map[string]any{
 				"healthy": healthy,
 				"version": versionString(),
 				"checks":  checks,
 			}
-			if step := cfg.ReuseStep; step != "" && serverOK && reuseHelps {
-				report["next_steps"] = []string{step}
+			if checkErr != nil {
+				ce := cerrors.AsCLIError(checkErr)
+				withReuseRecovery(ce, s, cmd)
+				s.scopeAuthSteps(ce.NextSteps)
+				report["next_steps"] = ce.NextSteps
 			}
 			// Release-update check: informational only, it never affects health
 			// and never fails the command — being out of date is not a fault.

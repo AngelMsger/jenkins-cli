@@ -36,6 +36,10 @@ returns the proposed changes without writing anything; use `--overwrite
 There is no server-version probe; navigation instructions accompany version-
 dependent links.
 
+For SSO migration, run `jenkins-cli --use-context team auth login --browser`
+in a terminal. Enter the mapped Jenkins user ID and the user's Jenkins API
+token. See [getting started](getting-started.md#get-an-api-token).
+
 Token guidance uses `<base-url>/me/security`. Older releases may use the user Configure
 → API Token page; a team can override the link. Both token and basic schemes require the
 Jenkins username. Verification checks the authenticated user, rather than treating an

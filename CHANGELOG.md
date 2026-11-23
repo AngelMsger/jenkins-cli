@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-11-23
+
+- Add `auth login --browser` for new SSO users and migration from stored
+  passwords to verified personal Jenkins API tokens. The terminal accepts an
+  updated Jenkins user ID and can migrate aliases of the old identity together
+  with confirmation. Login and the setup wizard check retained contexts before
+  updating a shared credential. A configuration change during sign-in is
+  reported, including whether the credential has already been stored.
+- Detect Jenkins login challenges, keep authenticated API requests on the
+  Jenkins origin, and include recovery in `auth status` and `doctor`.
+  An anonymous or missing user ID now fails both identity checks.
+- Treat a sign-in page returned with HTTP 200 after a build or queue write as
+  an unknown outcome. Recovery checks the exact write target before any retry.
+- Update the companion Skill to `0.2.10` with the browser sign-in workflow.
+
 ## [0.14.0] - 2026-11-10
 
 ### Added
@@ -522,7 +537,8 @@ workflow.
   release binaries and `make install`. A generated CLI reference (`docs/cli/`)
   and a GitHub Pages landing page.
 
-[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/AngelMsger/jenkins-cli/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/AngelMsger/jenkins-cli/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/AngelMsger/jenkins-cli/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/AngelMsger/jenkins-cli/compare/v0.12.1...v0.13.0
 [0.12.1]: https://github.com/AngelMsger/jenkins-cli/compare/v0.12.0...v0.12.1

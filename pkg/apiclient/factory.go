@@ -37,10 +37,11 @@ func BuildClient(p BuildParams) (Client, error) {
 	}
 
 	tc := transport.New(transport.Options{
-		Timeout:    p.Timeout,
-		MaxRetries: p.MaxRetries,
-		Decorators: []transport.Decorator{p.AuthDecorator},
-		Verbose:    p.Verbose,
+		SameOriginRedirects: true,
+		Timeout:             p.Timeout,
+		MaxRetries:          p.MaxRetries,
+		Decorators:          []transport.Decorator{p.AuthDecorator},
+		Verbose:             p.Verbose,
 	})
 
 	return New(Config{BaseURL: base, Transport: tc}), nil

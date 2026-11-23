@@ -148,14 +148,21 @@ After a CLI upgrade, refresh the Skill and reload the agent context.</p>
 
     <section class="cmd" id="jenkins-cli-auth-login">
       <h2>jenkins-cli auth login</h2>
-      <p class="short">Store credentials for the active context (interactive)</p>
-      <pre>jenkins-cli auth login</pre>
-      <p class="long">Prompts for your Jenkins username and API token (or password), verifies
-them against the server, and stores the secret in the OS keychain.
-Requires an interactive terminal; in CI / agent sandboxes set
-JENKINS_USER &#43; JENKINS_TOKEN (or JENKINS_PASSWORD) instead.</p>
-
-
+      <p class="short">Verify and store credentials for the active context</p>
+      <pre>jenkins-cli auth login [flags]</pre>
+      <p class="long">Enter a Jenkins user ID and API token (or password) in a terminal.
+With --browser, open Jenkins in your browser, complete single sign-on,
+then enter the Jenkins user ID and a personal API token in the terminal.
+This also migrates a password context after Jenkins verifies the token.</p>
+      <h3>Options</h3>
+      <table>
+        <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+        <tr><td><code>--browser</code></td><td><code>false</code></td><td>open Jenkins for SSO and verify a personal API token</td></tr>
+        </tbody>
+      </table>
+      <h3>Examples</h3><pre>  jenkins-cli auth login --browser
+  jenkins-cli --use-context team auth login --browser</pre>
     </section>
 
     <section class="cmd" id="jenkins-cli-auth-logout">

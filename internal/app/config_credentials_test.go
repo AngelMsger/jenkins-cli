@@ -60,6 +60,13 @@ func isolateConfigInit(t *testing.T) string {
 // answering its prompts (server URL, username, scheme, secret) from answers.
 func scriptedConfigInit(t *testing.T, cfgDir, context string, answers ...string) {
 	t.Helper()
+	if err := scriptedConfigInitResult(t, cfgDir, context, answers...); err != nil {
+		t.Fatalf("config init --context %s: %v", context, err)
+	}
+}
+
+func scriptedConfigInitResult(t *testing.T, cfgDir, context string, answers ...string) error {
+	t.Helper()
 	stdin, feed, err := os.Pipe()
 	if err != nil {
 		t.Fatal(err)
@@ -80,12 +87,14 @@ func scriptedConfigInit(t *testing.T, cfgDir, context string, answers ...string)
 		_ = sink.Close()
 	}()
 	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"--config", cfgDir, "config", "init", "--context", context})
+	args := []string{"--config", cfgDir, "config", "init"}
+	if context != "" {
+		args = append(args, "--context", context)
+	}
+	cmd.SetArgs(args)
 	cmd.SetOut(io.Discard)
 	cmd.SetErr(io.Discard)
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("config init --context %s: %v", context, err)
-	}
+	return cmd.Execute()
 }
 
 // resolveStoredSecret loads a context the way a fresh process does and

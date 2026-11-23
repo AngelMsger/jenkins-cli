@@ -6,9 +6,20 @@
 
 ## Get an API token
 
-In Jenkins: click your name (top right) → **Configure** → **API Token** → **Add
-new Token** → generate and copy it. An API token works even when the UI login
-goes through SSO, and can be revoked independently of your password.
+Run `jenkins-cli auth login --browser` in your terminal to open Jenkins.
+Complete SSO (including authentik or WeCom when prompted). Open **Security**
+(**Configure** on older releases), then **API Token → Add new Token**.
+Enter the Jenkins user ID and token at the terminal prompts. The user ID is
+visible at the printed `/me/api/json?tree=id` link after sign-in. This flow
+can replace a password-era username in the selected context. When token
+contexts already share that identity, the terminal lists the aliases and
+asks the user before changing their IDs together. On a terminal
+without a graphical browser, open the printed Jenkins URL on another device.
+
+Check `auth status` and its `user_id` after migration. Stale credential, user
+or scheme overrides in the shell or `.env` still take precedence. If a proxy
+challenges the API even with a verified Jenkins token, obtain the supported
+API route and authentication method from the service owner.
 
 ## Interactive setup (humans, on a terminal)
 

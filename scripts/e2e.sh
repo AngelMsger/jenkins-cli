@@ -103,6 +103,19 @@ check "queue cancellation" '"cancelled": true' -- run queue get 78
 check "doctor healthy"  '"healthy": true'      -- run doctor --no-update-check
 check "doctor reports Skill" '"companion-skill"' -- run doctor --no-update-check
 check "auth status"     '"authenticated": true' -- run auth status
+sso_status="$(JENKINS_USER=sso-required run auth status)"
+sso_doctor="$(JENKINS_USER=sso-required run doctor --no-update-check)"
+[[ "$sso_status" == *'"authenticated": false'* && "$sso_status" == *'"error_code": "AUTH_LOGIN_REQUIRED"'* ]]
+[[ "$sso_doctor" == *'"healthy": false'* && "$sso_doctor" == *'"check": "identity"'* ]]
+[[ "$sso_status" == *"auth login --browser"* && "$sso_doctor" == *"auth login --browser"* ]]
+if run auth login --browser </dev/null >"$TMP/browser.out" 2>"$TMP/browser.err"; then
+  echo 'FAIL - browser login accepted noninteractive input' >&2
+  exit 1
+else
+  [[ "$?" == 4 && ! -s "$TMP/browser.out" ]]
+  grep -q AUTH_LOGIN_NEEDS_TTY "$TMP/browser.err"
+fi
+echo "ok   - SSO recovery and browser login terminal requirement"
 
 SKILL_HOME="$TMP/skill-home"
 mkdir -p "$SKILL_HOME"

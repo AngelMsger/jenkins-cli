@@ -101,7 +101,9 @@ implementation. One file per resource: `jobs.go`, `builds.go`, `console.go`,
   Jenkins queued the build, but the CLI cannot say which one. Jenkins answers a
   trigger itself, so a redirect of a trigger (often to a login page, a single
   sign-on proxy, or `http` to `https`) is an unknown outcome with the
-  redirect's status. A stop or cancel is acknowledged by Stapler's
+  redirect's status. An HTTP 200 sign-in page after a POST produces
+  `WRITE_LOGIN_PAGE`. The CLI directs the caller to inspect the write target.
+  A stop or cancel is acknowledged by Stapler's
   `forwardToPreviousPage`: with no `Referer`, a 302 to "." of the request, the
   build page for `/job/<path>/<n>/stop` and `/queue/` for `/queue/cancelItem`.
   `forwardedToPreviousPage` accepts a 302 or 303 whose `Location` names the
@@ -299,6 +301,21 @@ without a service or user credentials. Unit tests cover target-specific
 precedence, persistence failures, guide URLs, and reloading a stored login.
 See [installation](installation.md#team-distribution-and-personal-login) for the
 canonical user-facing contract and product-specific authentication guidance.
+
+### Browser-assisted API token login
+
+`auth login --browser` hands the normalized Jenkins deployment's
+`/me/security` URL to the desktop browser. Identity-provider credentials and
+cookies stay in the browser. The terminal accepts a Jenkins user ID and API
+token and passes them through the same verification and persistence path as
+ordinary login. Explicit browser login selects the token scheme even for an
+old password context. A configured credential-page override is display-only.
+
+The default API client restricts authenticated redirects to the original
+origin. A Jenkins HTML login challenge or an anonymous 403 carries sign-in
+recovery. A resource-level permission denial retains its permission error.
+Login, credential reuse, status and doctor all require a nonanonymous user ID
+from `/me/api/json` to report an authenticated identity.
 
 ### Existing credential reuse
 
